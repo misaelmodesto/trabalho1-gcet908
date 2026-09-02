@@ -8,9 +8,47 @@ const {
 // GET /matriculas
 function listarMatriculas(req, res) {
 
-    return res.status(200).json(matriculas);
-}
+    const {
+        status,
+        estudanteId,
+        turmaId
+    } = req.query;
 
+    let resultado = [...matriculas];
+
+
+    if (status) {
+        resultado = resultado.filter(
+            matricula =>
+                matricula.status === status
+        );
+    }
+
+
+    if (estudanteId) {
+
+        const id = parseInt(estudanteId);
+
+        resultado = resultado.filter(
+            matricula =>
+                matricula.estudanteId === id
+        );
+    }
+
+
+    if (turmaId) {
+
+        const id = parseInt(turmaId);
+
+        resultado = resultado.filter(
+            matricula =>
+                matricula.turmaId === id
+        );
+    }
+
+
+    return res.status(200).json(resultado);
+}
 
 // GET /matriculas/:id
 function buscarMatriculaPorId(req, res) {

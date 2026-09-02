@@ -3,9 +3,46 @@ const { turmas } = require('../data/db-memoria');
 
 // GET /turmas
 function listarTurmas(req, res) {
-    return res.status(200).json(turmas);
-}
 
+    const {
+        disciplina,
+        professor,
+        semestre
+    } = req.query;
+
+    let resultado = [...turmas];
+
+
+    if (disciplina) {
+        resultado = resultado.filter(
+            turma =>
+                turma.disciplina
+                    .toLowerCase()
+                    .includes(disciplina.toLowerCase())
+        );
+    }
+
+
+    if (professor) {
+        resultado = resultado.filter(
+            turma =>
+                turma.professor
+                    .toLowerCase()
+                    .includes(professor.toLowerCase())
+        );
+    }
+
+
+    if (semestre) {
+        resultado = resultado.filter(
+            turma =>
+                turma.semestre === semestre
+        );
+    }
+
+
+    return res.status(200).json(resultado);
+}
 
 // GET /turmas/:id
 function buscarTurmaPorId(req, res) {

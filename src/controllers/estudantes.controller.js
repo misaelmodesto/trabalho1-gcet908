@@ -3,7 +3,136 @@ const { estudantes } = require('../data/db-memoria');
 
 // GET /estudantes
 function listarEstudantes(req, res) {
-    return res.status(200).json(estudantes);
+
+    const {
+        nome,
+        curso,
+        page = 1,
+        limit = 10,
+        ordenarPor,
+        ordem = 'asc'
+    } = req.query;
+
+    const pagina = parseInt(page);
+    const limite = parseInt(limit);
+
+
+    // Validação da paginação
+    if (
+        isNaN(pagina) ||
+        isNaN(limite) ||
+        pagina < 1 ||
+        limite < 1
+    ) {
+        return res.status(400).json({
+            erro: {
+                codigo: 'PAGINACAO_INVALIDA',
+                mensagem: 'Os parâmetros page e limit devem ser números maiores que zero'
+            }
+        });
+    }
+
+
+    // Cópia do array original
+    let resultado = [...estudantes];
+
+
+    // Busca por nome
+    if (nome) {
+        resultado = resultado.filter(
+            estudante =>
+                estudante.nome
+                    .toLowerCase()
+                    .includes(nome.toLowerCase())
+        );
+    }
+
+
+    // Filtro por curso
+    if (curso) {
+        resultado = resultado.filter(
+            estudante =>
+                estudante.curso
+                    .toLowerCase()
+                    .includes(curso.toLowerCase())
+        );
+    }
+
+
+    // Ordenação
+    if (ordenarPor) {
+
+        const camposPermitidos = [
+            'nome',
+            'email',
+            'curso',
+            'matricula'
+        ];
+
+        if (!camposPermitidos.includes(ordenarPor)) {
+            return res.status(400).json({
+                erro: {
+                    codigo: 'ORDENACAO_INVALIDA',
+                    mensagem: 'Campo de ordenação inválido'
+                }
+            });
+        }
+
+        if (ordem !== 'asc' && ordem !== 'desc') {
+            return res.status(400).json({
+                erro: {
+                    codigo: 'ORDENACAO_INVALIDA',
+                    mensagem: 'A ordem deve ser asc ou desc'
+                }
+            });
+        }
+
+        resultado.sort((a, b) => {
+
+            const valorA = a[ordenarPor]
+                .toString()
+                .toLowerCase();
+
+            const valorB = b[ordenarPor]
+                .toString()
+                .toLowerCase();
+
+            if (valorA < valorB) {
+                return ordem === 'asc' ? -1 : 1;
+            }
+
+            if (valorA > valorB) {
+                return ordem === 'asc' ? 1 : -1;
+            }
+
+            return 0;
+        });
+    }
+
+
+    // Total depois dos filtros
+    const total = resultado.length;
+
+    const totalPaginas = Math.ceil(total / limite);
+
+
+    // Paginação
+    const inicio = (pagina - 1) * limite;
+
+    const fim = inicio + limite;
+
+    const dados = resultado.slice(inicio, fim);
+
+
+    return res.status(200).json({
+        dados,
+        paginacao: {
+            total,
+            pagina,
+            limite,
+            totalPaginas
+        }
+    });
 }
 
 

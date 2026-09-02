@@ -1,11 +1,19 @@
 const express = require('express');
 const dotenv = require('dotenv');
 
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yamljs');
+
 const erroMiddleware = require('./middlewares/erro.middleware');
 
 const estudantesRoutes = require('./routes/estudantes.routes');
 const turmasRoutes = require('./routes/turmas.routes');
 const matriculasRoutes = require('./routes/matriculas.routes');
+
+const swaggerDocument = YAML.load(
+    './src/docs/openapi.yaml'
+);
+
 
 dotenv.config();
 
@@ -14,6 +22,13 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 app.use(express.json());
+
+// Swagger
+app.use(
+    '/docs',
+    swaggerUi.serve,
+    swaggerUi.setup(swaggerDocument)
+);
 
 app.get('/', (req, res) => {
     res.status(200).json({

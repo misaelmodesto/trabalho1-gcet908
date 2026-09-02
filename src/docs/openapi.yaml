@@ -1,0 +1,1136 @@
+openapi: 3.0.3
+
+info:
+  title: API de Gestão de Turmas Acadêmicas
+  version: 1.0.0
+  description: >
+    API REST desenvolvida com Node.js e Express para gerenciamento
+    de estudantes, turmas e matrículas. Os dados são mantidos
+    em memória nesta versão da aplicação.
+
+servers:
+  - url: http://localhost:3000
+    description: Servidor local
+
+
+tags:
+  - name: Estudantes
+    description: Operações relacionadas aos estudantes
+
+  - name: Turmas
+    description: Operações relacionadas às turmas
+
+  - name: Matrículas
+    description: Operações relacionadas às matrículas
+
+
+paths:
+
+  # =====================================================
+  # ESTUDANTES
+  # =====================================================
+
+  /api/v1/estudantes:
+
+    get:
+      tags:
+        - Estudantes
+      summary: Lista os estudantes
+      description: >
+        Retorna os estudantes cadastrados. Permite busca por nome,
+        filtro por curso, ordenação e paginação.
+
+      parameters:
+
+        - name: nome
+          in: query
+          required: false
+          description: Busca estudantes pelo nome
+          schema:
+            type: string
+          example: João
+
+        - name: curso
+          in: query
+          required: false
+          description: Filtra estudantes pelo curso
+          schema:
+            type: string
+          example: Computação
+
+        - name: page
+          in: query
+          required: false
+          description: Número da página
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+
+        - name: limit
+          in: query
+          required: false
+          description: Quantidade de registros por página
+          schema:
+            type: integer
+            minimum: 1
+            default: 10
+          example: 10
+
+        - name: ordenarPor
+          in: query
+          required: false
+          description: Campo utilizado para ordenação
+          schema:
+            type: string
+            enum:
+              - nome
+              - email
+              - curso
+              - matricula
+          example: nome
+
+        - name: ordem
+          in: query
+          required: false
+          description: Direção da ordenação
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+            default: asc
+          example: asc
+
+      responses:
+
+        '200':
+          description: Estudantes retornados com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListaEstudantes'
+              example:
+                dados:
+                  - id: 1
+                    nome: João Silva
+                    email: joao@email.com
+                    curso: Licenciatura em Computação
+                    matricula: "20260001"
+                paginacao:
+                  total: 3
+                  pagina: 1
+                  limite: 10
+                  totalPaginas: 1
+
+        '400':
+          description: Parâmetros de paginação ou ordenação inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+              example:
+                erro:
+                  codigo: PAGINACAO_INVALIDA
+                  mensagem: Os parâmetros page e limit devem ser números maiores que zero
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+    post:
+      tags:
+        - Estudantes
+      summary: Cadastra um estudante
+      description: Cria um novo estudante.
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstudanteEntrada'
+            example:
+              nome: Ana Souza
+              email: ana@email.com
+              curso: Pedagogia
+              matricula: "20260004"
+
+      responses:
+
+        '201':
+          description: Estudante criado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Estudante'
+              example:
+                id: 4
+                nome: Ana Souza
+                email: ana@email.com
+                curso: Pedagogia
+                matricula: "20260004"
+
+        '400':
+          $ref: '#/components/responses/DadosInvalidos'
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+  /api/v1/estudantes/{id}:
+
+    parameters:
+      - $ref: '#/components/parameters/Id'
+
+
+    get:
+      tags:
+        - Estudantes
+      summary: Busca um estudante pelo ID
+
+      responses:
+
+        '200':
+          description: Estudante encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Estudante'
+              example:
+                id: 1
+                nome: João Silva
+                email: joao@email.com
+                curso: Licenciatura em Computação
+                matricula: "20260001"
+
+        '404':
+          description: Estudante não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+              example:
+                erro:
+                  codigo: ESTUDANTE_NAO_ENCONTRADO
+                  mensagem: Estudante com id 999 não encontrado
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+    put:
+      tags:
+        - Estudantes
+      summary: Substitui os dados de um estudante
+      description: >
+        Substitui integralmente os dados do estudante.
+        Todos os campos são obrigatórios.
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstudanteEntrada'
+            example:
+              nome: João da Silva
+              email: joao.silva@email.com
+              curso: Licenciatura em Computação
+              matricula: "20260001"
+
+      responses:
+
+        '200':
+          description: Estudante atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Estudante'
+
+        '400':
+          $ref: '#/components/responses/DadosInvalidos'
+
+        '404':
+          description: Estudante não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+    patch:
+      tags:
+        - Estudantes
+      summary: Atualiza parcialmente um estudante
+      description: >
+        Atualiza somente os campos enviados na requisição.
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EstudanteParcial'
+            example:
+              curso: Engenharia de Software
+
+      responses:
+
+        '200':
+          description: Estudante atualizado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Estudante'
+
+        '400':
+          $ref: '#/components/responses/DadosInvalidos'
+
+        '404':
+          description: Estudante não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+    delete:
+      tags:
+        - Estudantes
+      summary: Remove um estudante
+
+      responses:
+
+        '204':
+          description: Estudante removido com sucesso
+
+        '404':
+          description: Estudante não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+  /api/v1/estudantes/{id}/matriculas:
+
+    get:
+      tags:
+        - Estudantes
+        - Matrículas
+      summary: Lista as matrículas de um estudante
+      description: >
+        Retorna todas as matrículas associadas ao estudante informado.
+
+      parameters:
+        - $ref: '#/components/parameters/Id'
+
+      responses:
+
+        '200':
+          description: Matrículas do estudante retornadas com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Matricula'
+              example:
+                - id: 1
+                  estudanteId: 1
+                  turmaId: 1
+                  dataMatricula: "2026-08-25"
+                  status: ativa
+
+        '404':
+          description: Estudante não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+  # =====================================================
+  # TURMAS
+  # =====================================================
+
+  /api/v1/turmas:
+
+    get:
+      tags:
+        - Turmas
+      summary: Lista as turmas
+      description: >
+        Lista as turmas cadastradas e permite filtros
+        por disciplina, professor e semestre.
+
+      parameters:
+
+        - name: disciplina
+          in: query
+          required: false
+          schema:
+            type: string
+          example: Web
+
+        - name: professor
+          in: query
+          required: false
+          schema:
+            type: string
+          example: Carlos
+
+        - name: semestre
+          in: query
+          required: false
+          schema:
+            type: string
+          example: "2026.2"
+
+      responses:
+
+        '200':
+          description: Turmas retornadas com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Turma'
+              example:
+                - id: 1
+                  disciplina: Desenvolvimento Web
+                  codigo: GCET123
+                  professor: Carlos Souza
+                  semestre: "2026.2"
+                  vagas: 30
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+    post:
+      tags:
+        - Turmas
+      summary: Cria uma nova turma
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TurmaEntrada'
+            example:
+              disciplina: Engenharia de Software
+              codigo: GCET125
+              professor: Marcos Silva
+              semestre: "2026.2"
+              vagas: 35
+
+      responses:
+
+        '201':
+          description: Turma criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Turma'
+
+        '400':
+          $ref: '#/components/responses/DadosInvalidos'
+
+        '409':
+          description: Já existe uma turma com o código informado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+              example:
+                erro:
+                  codigo: TURMA_DUPLICADA
+                  mensagem: Já existe uma turma com este código
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+  /api/v1/turmas/{id}:
+
+    parameters:
+      - $ref: '#/components/parameters/Id'
+
+
+    get:
+      tags:
+        - Turmas
+      summary: Busca uma turma pelo ID
+
+      responses:
+
+        '200':
+          description: Turma encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Turma'
+
+        '404':
+          description: Turma não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+    put:
+      tags:
+        - Turmas
+      summary: Substitui uma turma
+      description: Todos os campos são obrigatórios.
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TurmaEntrada'
+            example:
+              disciplina: Desenvolvimento Web II
+              codigo: GCET123
+              professor: Carlos Souza
+              semestre: "2026.2"
+              vagas: 35
+
+      responses:
+
+        '200':
+          description: Turma atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Turma'
+
+        '400':
+          $ref: '#/components/responses/DadosInvalidos'
+
+        '404':
+          description: Turma não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+        '409':
+          description: Código de turma em conflito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+    patch:
+      tags:
+        - Turmas
+      summary: Atualiza parcialmente uma turma
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TurmaParcial'
+            example:
+              vagas: 40
+
+      responses:
+
+        '200':
+          description: Turma atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Turma'
+
+        '400':
+          $ref: '#/components/responses/DadosInvalidos'
+
+        '404':
+          description: Turma não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+        '409':
+          description: Código de turma em conflito
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+    delete:
+      tags:
+        - Turmas
+      summary: Remove uma turma
+
+      responses:
+
+        '204':
+          description: Turma removida com sucesso
+
+        '404':
+          description: Turma não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+  # =====================================================
+  # MATRÍCULAS
+  # =====================================================
+
+  /api/v1/matriculas:
+
+    get:
+      tags:
+        - Matrículas
+      summary: Lista as matrículas
+      description: >
+        Lista as matrículas e permite filtros por status,
+        estudante e turma.
+
+      parameters:
+
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - ativa
+              - trancada
+              - cancelada
+          example: ativa
+
+        - name: estudanteId
+          in: query
+          required: false
+          schema:
+            type: integer
+          example: 1
+
+        - name: turmaId
+          in: query
+          required: false
+          schema:
+            type: integer
+          example: 1
+
+      responses:
+
+        '200':
+          description: Matrículas retornadas com sucesso
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Matricula'
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+    post:
+      tags:
+        - Matrículas
+      summary: Cria uma matrícula
+      description: >
+        Relaciona um estudante existente a uma turma existente.
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatriculaEntrada'
+            example:
+              estudanteId: 1
+              turmaId: 2
+              dataMatricula: "2026-09-02"
+              status: ativa
+
+      responses:
+
+        '201':
+          description: Matrícula criada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Matricula'
+
+        '400':
+          $ref: '#/components/responses/DadosInvalidos'
+
+        '404':
+          description: Estudante ou turma não encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+        '409':
+          description: Matrícula duplicada ou turma sem vagas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+              example:
+                erro:
+                  codigo: MATRICULA_DUPLICADA
+                  mensagem: O estudante já possui matrícula nesta turma
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+  /api/v1/matriculas/{id}:
+
+    parameters:
+      - $ref: '#/components/parameters/Id'
+
+
+    get:
+      tags:
+        - Matrículas
+      summary: Busca uma matrícula pelo ID
+
+      responses:
+
+        '200':
+          description: Matrícula encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Matricula'
+
+        '404':
+          description: Matrícula não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+    put:
+      tags:
+        - Matrículas
+      summary: Substitui uma matrícula
+      description: Todos os campos são obrigatórios.
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatriculaEntrada'
+            example:
+              estudanteId: 1
+              turmaId: 2
+              dataMatricula: "2026-09-02"
+              status: ativa
+
+      responses:
+
+        '200':
+          description: Matrícula atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Matricula'
+
+        '400':
+          $ref: '#/components/responses/DadosInvalidos'
+
+        '404':
+          description: Matrícula, estudante ou turma não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+        '409':
+          description: Conflito de matrícula
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+    patch:
+      tags:
+        - Matrículas
+      summary: Atualiza parcialmente uma matrícula
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatriculaParcial'
+            example:
+              status: trancada
+
+      responses:
+
+        '200':
+          description: Matrícula atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Matricula'
+
+        '400':
+          $ref: '#/components/responses/DadosInvalidos'
+
+        '404':
+          description: Matrícula, estudante ou turma não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+        '409':
+          description: Conflito de matrícula
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+    delete:
+      tags:
+        - Matrículas
+      summary: Remove uma matrícula
+
+      responses:
+
+        '204':
+          description: Matrícula removida com sucesso
+
+        '404':
+          description: Matrícula não encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Erro'
+
+        '500':
+          $ref: '#/components/responses/ErroInterno'
+
+
+# =====================================================
+# COMPONENTES REUTILIZÁVEIS
+# =====================================================
+
+components:
+
+  parameters:
+
+    Id:
+      name: id
+      in: path
+      required: true
+      description: Identificador do recurso
+      schema:
+        type: integer
+        minimum: 1
+      example: 1
+
+
+  schemas:
+
+    Estudante:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nome:
+          type: string
+          example: João Silva
+        email:
+          type: string
+          example: joao@email.com
+        curso:
+          type: string
+          example: Licenciatura em Computação
+        matricula:
+          type: string
+          example: "20260001"
+
+
+    EstudanteEntrada:
+      type: object
+      required:
+        - nome
+        - email
+        - curso
+        - matricula
+      properties:
+        nome:
+          type: string
+          example: João Silva
+        email:
+          type: string
+          example: joao@email.com
+        curso:
+          type: string
+          example: Licenciatura em Computação
+        matricula:
+          type: string
+          example: "20260001"
+
+
+    EstudanteParcial:
+      type: object
+      properties:
+        nome:
+          type: string
+        email:
+          type: string
+        curso:
+          type: string
+        matricula:
+          type: string
+
+
+    ListaEstudantes:
+      type: object
+      properties:
+
+        dados:
+          type: array
+          items:
+            $ref: '#/components/schemas/Estudante'
+
+        paginacao:
+          type: object
+          properties:
+            total:
+              type: integer
+              example: 3
+            pagina:
+              type: integer
+              example: 1
+            limite:
+              type: integer
+              example: 10
+            totalPaginas:
+              type: integer
+              example: 1
+
+
+    Turma:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        disciplina:
+          type: string
+          example: Desenvolvimento Web
+        codigo:
+          type: string
+          example: GCET123
+        professor:
+          type: string
+          example: Carlos Souza
+        semestre:
+          type: string
+          example: "2026.2"
+        vagas:
+          type: integer
+          example: 30
+
+
+    TurmaEntrada:
+      type: object
+      required:
+        - disciplina
+        - codigo
+        - professor
+        - semestre
+        - vagas
+      properties:
+        disciplina:
+          type: string
+        codigo:
+          type: string
+        professor:
+          type: string
+        semestre:
+          type: string
+        vagas:
+          type: integer
+          minimum: 1
+
+
+    TurmaParcial:
+      type: object
+      properties:
+        disciplina:
+          type: string
+        codigo:
+          type: string
+        professor:
+          type: string
+        semestre:
+          type: string
+        vagas:
+          type: integer
+          minimum: 1
+
+
+    Matricula:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        estudanteId:
+          type: integer
+          example: 1
+        turmaId:
+          type: integer
+          example: 1
+        dataMatricula:
+          type: string
+          example: "2026-08-25"
+        status:
+          type: string
+          enum:
+            - ativa
+            - trancada
+            - cancelada
+          example: ativa
+
+
+    MatriculaEntrada:
+      type: object
+      required:
+        - estudanteId
+        - turmaId
+        - dataMatricula
+        - status
+      properties:
+        estudanteId:
+          type: integer
+          example: 1
+        turmaId:
+          type: integer
+          example: 2
+        dataMatricula:
+          type: string
+          example: "2026-09-02"
+        status:
+          type: string
+          enum:
+            - ativa
+            - trancada
+            - cancelada
+          example: ativa
+
+
+    MatriculaParcial:
+      type: object
+      properties:
+        estudanteId:
+          type: integer
+        turmaId:
+          type: integer
+        dataMatricula:
+          type: string
+        status:
+          type: string
+          enum:
+            - ativa
+            - trancada
+            - cancelada
+
+
+    Erro:
+      type: object
+      properties:
+        erro:
+          type: object
+          properties:
+            codigo:
+              type: string
+              example: RECURSO_NAO_ENCONTRADO
+            mensagem:
+              type: string
+              example: Recurso não encontrado
+
+
+  responses:
+
+    DadosInvalidos:
+      description: Dados enviados são inválidos
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Erro'
+          example:
+            erro:
+              codigo: DADOS_INVALIDOS
+              mensagem: Os dados informados são inválidos
+
+
+    ErroInterno:
+      description: Erro interno do servidor
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Erro'
+          example:
+            erro:
+              codigo: ERRO_INTERNO
+              mensagem: Ocorreu um erro interno no servidor

@@ -1,6 +1,11 @@
 const express = require('express');
 
 const {
+    validarTurma,
+    validarTurmaParcial
+} = require('../middlewares/validacao.middleware');
+
+const {
     listarTurmas,
     buscarTurmaPorId,
     criarTurma,
@@ -15,11 +20,11 @@ router.get('/', listarTurmas);
 
 router.get('/:id', buscarTurmaPorId);
 
-router.post('/', criarTurma);
+router.post('/', validarTurma, criarTurma);
 
-router.put('/:id', substituirTurma);
+router.put('/:id', validarTurma, substituirTurma);
 
-router.patch('/:id', atualizarTurma);
+router.patch('/:id', validarTurmaParcial, atualizarTurma);
 
 router.delete('/:id', removerTurma);
 

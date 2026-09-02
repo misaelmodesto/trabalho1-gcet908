@@ -168,14 +168,14 @@ function criarEstudante(req, res) {
         matricula
     } = req.body;
 
-    if (!nome || !email || !curso || !matricula) {
+    /*if (!nome || !email || !curso || !matricula) {
         return res.status(400).json({
             erro: {
                 codigo: 'DADOS_INVALIDOS',
                 mensagem: 'Nome, email, curso e matrícula são obrigatórios'
             }
         });
-    }
+    }*/
 
     const estudanteDuplicado = estudantes.find(
         estudante =>
@@ -236,14 +236,14 @@ function substituirEstudante(req, res) {
         matricula
     } = req.body;
 
-    if (!nome || !email || !curso || !matricula) {
+    /*if (!nome || !email || !curso || !matricula) {
         return res.status(400).json({
             erro: {
                 codigo: 'DADOS_INVALIDOS',
                 mensagem: 'Nome, email, curso e matrícula são obrigatórios'
             }
         });
-    }
+    }*/
 
     const estudanteDuplicado = estudantes.find(
         estudante =>

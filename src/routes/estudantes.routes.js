@@ -1,6 +1,11 @@
 const express = require('express');
 
 const {
+    validarEstudante,
+    validarEstudanteParcial
+} = require('../middlewares/validacao.middleware');
+
+const {
     listarEstudantes,
     buscarEstudantePorId,
     criarEstudante,
@@ -22,11 +27,11 @@ router.get('/:id/matriculas', listarMatriculasPorEstudante);
 
 router.get('/:id', buscarEstudantePorId);
 
-router.post('/', criarEstudante);
+router.post('/', validarEstudante, criarEstudante);
 
-router.put('/:id', substituirEstudante);
+router.put('/:id', validarEstudante, substituirEstudante);
 
-router.patch('/:id', atualizarEstudante);
+router.patch('/:id', validarEstudanteParcial, atualizarEstudante);
 
 router.delete('/:id', removerEstudante);
 

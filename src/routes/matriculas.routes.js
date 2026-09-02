@@ -1,6 +1,11 @@
 const express = require('express');
 
 const {
+    validarMatricula,
+    validarMatriculaParcial
+} = require('../middlewares/validacao.middleware');
+
+const {
     listarMatriculas,
     buscarMatriculaPorId,
     criarMatricula,
@@ -16,11 +21,11 @@ router.get('/', listarMatriculas);
 
 router.get('/:id', buscarMatriculaPorId);
 
-router.post('/', criarMatricula);
+router.post('/', validarMatricula, criarMatricula);
 
-router.put('/:id', substituirMatricula);
+router.put('/:id', validarMatricula, substituirMatricula);
 
-router.patch('/:id', atualizarMatricula);
+router.patch('/:id', validarMatriculaParcial, atualizarMatricula);
 
 router.delete('/:id', removerMatricula);
 

@@ -279,4 +279,4 @@ Isso permite que futuras versões da API sejam disponibilizadas sem alterar o co
 
 Projeto desenvolvido para a disciplina **DESENVOLVIMENTO DE SOFTWARE II - UFRB**.
 
-- Misael Modesto
+- Misael Santos Modesto

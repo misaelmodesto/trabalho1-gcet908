@@ -31,10 +31,10 @@ export async function buscarMatriculaPorId(req, res) {
 // POST /matriculas
 export async function criarMatricula(req, res) {
     try {
-        const { estudanteId, turmaId, dataMatricula, status } = req.body;
+        const { estudanteId, turmaId, status } = req.body;
 
         const novaMatricula = await prisma.matricula.create({
-            data: { estudanteId, turmaId, dataMatricula, status }
+            data: { estudanteId, turmaId, status }
         });
 
         return res.status(201).json(novaMatricula);

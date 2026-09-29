@@ -140,31 +140,31 @@ function validarTurma(req, res, next) {
 
     const {
         disciplina,
-        codigo,
-        professor,
-        semestre,
-        vagas
+        //codigo,
+        //professor,
+        semestre
+        //vagas
     } = req.body;
 
 
     if (
         !disciplina ||
-        !codigo ||
-        !professor ||
-        !semestre ||
-        vagas === undefined
+        //!codigo ||
+        //!professor ||
+        !semestre 
+        //vagas === undefined
     ) {
         return erroValidacao(
             res,
-            'Disciplina, código, professor, semestre e vagas são obrigatórios'
+            'Disciplina e semestre são obrigatórios'
         );
     }
 
 
     if (
         typeof disciplina !== 'string' ||
-        typeof codigo !== 'string' ||
-        typeof professor !== 'string' ||
+       // typeof codigo !== 'string' ||
+        //typeof professor !== 'string' ||
         typeof semestre !== 'string'
     ) {
         return erroValidacao(
@@ -174,7 +174,7 @@ function validarTurma(req, res, next) {
     }
 
 
-    if (
+   /*if (
         typeof vagas !== 'number' ||
         !Number.isInteger(vagas) ||
         vagas <= 0
@@ -183,7 +183,7 @@ function validarTurma(req, res, next) {
             res,
             'Vagas deve ser um número inteiro maior que zero'
         );
-    }
+    }*/
 
 
     next();
@@ -281,7 +281,7 @@ function validarMatricula(req, res, next) {
     const {
         estudanteId,
         turmaId,
-        dataMatricula,
+        /*dataMatricula,*/
         status
     } = req.body;
 
@@ -289,12 +289,12 @@ function validarMatricula(req, res, next) {
     if (
         estudanteId === undefined ||
         turmaId === undefined ||
-        !dataMatricula ||
+        /*!dataMatricula ||*/
         !status
     ) {
         return erroValidacao(
             res,
-            'Estudante, turma, data da matrícula e status são obrigatórios'
+            'Estudante, turma e status são obrigatórios'
         );
     }
 

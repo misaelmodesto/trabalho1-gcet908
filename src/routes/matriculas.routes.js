@@ -11,7 +11,8 @@ import {
     criarMatricula,
     substituirMatricula,
     atualizarMatricula,
-    removerMatricula
+    removerMatricula,
+    listarMatriculasPorEstudante
 } from '../controllers/matriculas.controller.js';
 
 const router = express.Router();
@@ -22,5 +23,7 @@ router.post('/', validarMatricula, criarMatricula);
 router.put('/:id', validarMatricula, substituirMatricula);
 router.patch('/:id', validarMatriculaParcial, atualizarMatricula);
 router.delete('/:id', removerMatricula);
+
+router.get('/:id/matriculas', listarMatriculasPorEstudante);
 
 export default router;

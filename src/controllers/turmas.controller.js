@@ -46,19 +46,19 @@ export async function buscarTurmaPorId(req, res) {
 // POST /turmas
 export async function criarTurma(req, res) {
     try {
-        const { disciplina, codigo, professor, semestre, vagas } = req.body;
+        const { disciplina, semestre } = req.body;
 
-        if (!disciplina || !codigo || !professor || !semestre || vagas === undefined) {
+        if (!disciplina || !semestre ) {
             return res.status(400).json({
                 erro: {
                     codigo: 'DADOS_INVALIDOS',
-                    mensagem: 'Disciplina, código, professor, semestre e vagas são obrigatórios'
+                    mensagem: 'Disciplina e semestre são obrigatórios'
                 }
             });
         }
 
         const novaTurma = await prisma.turma.create({
-            data: { disciplina, codigo, professor, semestre, vagas }
+            data: { disciplina,  semestre }
         });
 
         return res.status(201).json(novaTurma);

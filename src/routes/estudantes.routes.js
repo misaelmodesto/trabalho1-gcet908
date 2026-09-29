@@ -12,7 +12,8 @@ import {
     criarEstudante,
     substituirEstudante,
     atualizarEstudante,
-    removerEstudante
+    removerEstudante,
+    /*listarMatriculasPorEstudante*/
 } from '../controllers/estudantes.controller';
 
 const router = express.Router();

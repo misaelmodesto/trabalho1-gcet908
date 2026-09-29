@@ -1,100 +1,75 @@
-import { prisma } from '../lib/prisma.js';
+import * as matriculasService from '../services/matriculas.service.js';
 
-// GET /matriculas
-export async function listarMatriculas(req, res) {
+export async function listarMatriculas(req, res, next) {
     try {
-        const matriculas = await prisma.matricula.findMany();
+        const matriculas = await matriculasService.listarMatriculas();
         return res.status(200).json(matriculas);
     } catch (error) {
-        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
+        return next(error);
     }
 }
 
-// GET /matriculas/:id
-export async function buscarMatriculaPorId(req, res) {
+export async function buscarMatriculaPorId(req, res, next) {
     try {
-        const id = parseInt(req.params.id);
-        const matricula = await prisma.matricula.findUnique({ where: { id } });
+        const matricula = await matriculasService.buscarMatriculaPorId(req.params.id);
+        return res.status(200).json(matricula);
+    } catch (error) {
+        return next(error);
+    }
+}
 
-        if (!matricula) {
-            return res.status(404).json({
-                erro: { codigo: 'MATRICULA_NAO_ENCONTRADA', mensagem: `Matrícula com id ${id} não encontrada` }
-            });
-        }
+export async function criarMatricula(req, res, next) {
+    try {
+        const matricula = await matriculasService.criarMatricula(req.body);
+        return res.status(201).json(matricula);
+    } catch (error) {
+        return next(error);
+    }
+}
+
+export async function substituirMatricula(req, res, next) {
+    try {
+        const matricula = await matriculasService.substituirMatricula(
+            req.params.id,
+            req.body
+        );
 
         return res.status(200).json(matricula);
     } catch (error) {
-        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
+        return next(error);
     }
 }
 
-// POST /matriculas
-export async function criarMatricula(req, res) {
+export async function atualizarMatricula(req, res, next) {
     try {
-        const { estudanteId, turmaId, status } = req.body;
+        const matricula = await matriculasService.atualizarMatricula(
+            req.params.id,
+            req.body
+        );
 
-        const novaMatricula = await prisma.matricula.create({
-            data: { estudanteId, turmaId, status }
-        });
-
-        return res.status(201).json(novaMatricula);
+        return res.status(200).json(matricula);
     } catch (error) {
-        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
+        return next(error);
     }
 }
 
-// PUT /matriculas/:id
-export async function substituirMatricula(req, res) {
+export async function removerMatricula(req, res, next) {
     try {
-        const id = parseInt(req.params.id);
-        const { estudanteId, turmaId, dataMatricula, status } = req.body;
-
-        const matriculaAtualizada = await prisma.matricula.update({
-            where: { id },
-            data: { estudanteId, turmaId, dataMatricula, status }
-        });
-
-        return res.status(200).json(matriculaAtualizada);
-    } catch (error) {
-        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
-    }
-}
-
-// PATCH /matriculas/:id
-export async function atualizarMatricula(req, res) {
-    try {
-        const id = parseInt(req.params.id);
-        const { estudanteId, turmaId, dataMatricula, status } = req.body;
-
-        const matriculaAtualizada = await prisma.matricula.update({
-            where: { id },
-            data: { estudanteId, turmaId, dataMatricula, status }
-        });
-
-        return res.status(200).json(matriculaAtualizada);
-    } catch (error) {
-        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
-    }
-}
-
-// DELETE /matriculas/:id
-export async function removerMatricula(req, res) {
-    try {
-        const id = parseInt(req.params.id);
-        await prisma.matricula.delete({ where: { id } });
+        await matriculasService.removerMatricula(req.params.id);
         return res.status(204).send();
     } catch (error) {
-        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
+        return next(error);
     }
 }
 
-// GET /estudantes/:id/matriculas
-export async function listarMatriculasPorEstudante(req, res) {
+export async function listarMatriculasPorEstudante(req, res, next) {
     try {
-        const estudanteId = parseInt(req.params.id);
-        const matriculas = await prisma.matricula.findMany({ where: { estudanteId } });
+        const matriculas = await matriculasService.listarMatriculasPorEstudante(
+            req.params.id
+        );
+
         return res.status(200).json(matriculas);
     } catch (error) {
-        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
+        return next(error);
     }
 }

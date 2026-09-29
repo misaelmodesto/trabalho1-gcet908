@@ -14,52 +14,62 @@ A API possui três recursos principais:
 
 O recurso de matrícula representa a relação entre um estudante e uma turma.
 
-Também existe uma rota relacionada para consultar as matrículas de um determinado estudante:
-
-```http
-GET /api/v1/estudantes/:id/matriculas
-```
+As rotas disponíveis estão descritas na seção de endpoints.
 
 ## Tecnologias utilizadas
 
-- Node.js
-- Express
-- Swagger UI
-- OpenAPI 3.0
-- YAML
-- dotenv
+- Node.js com módulos ES (`type: module`)
+- Express 5
+- PostgreSQL remoto
+- Prisma ORM 7 e Prisma Client
+- `@prisma/adapter-pg` e `pg` para a conexão com PostgreSQL
+- Swagger UI e OpenAPI 3.0
+- `dotenv` para variáveis de ambiente
+- `tsx` para executar a aplicação
 
-Os dados são mantidos em memória nesta versão do projeto, sem utilização de banco de dados.
+## Persistência e banco de dados
+
+A aplicação **não utiliza mais arrays em memória**. Os dados são persistidos em um banco PostgreSQL e acessados por meio do Prisma.
+
+Existem duas conexões configuradas:
+
+- `DATABASE_URL`: utilizada pela aplicação em tempo de execução, por meio do adapter `@prisma/adapter-pg`.
+- `DIRECT_URL`: utilizada pela CLI do Prisma para migrations e demais operações administrativas, conforme definido em `prisma.config.ts`.
+
+No ambiente atual, `DATABASE_URL` corresponde à conexão da aplicação pelo pooler em modo transacional e `DIRECT_URL` à conexão usada pelo pooler em modo de sessão para migrations.
+
+O arquivo `.env` não deve ser versionado. Configure-o na raiz do projeto:
+
+```env
+PORT=3000
+DATABASE_URL="postgresql://usuario:senha@host:porta/banco"
+DIRECT_URL="postgresql://usuario:senha@host:porta/banco"
+```
+
+Use as URLs fornecidas pelo seu provedor de PostgreSQL. Nunca publique usuário, senha ou tokens no README, em commits ou em arquivos versionados.
 
 ## Estrutura do projeto
 
 ```text
 trabalho1/
-│
+├── prisma/
+│   ├── migrations/
+│   └── schema.prisma
+├── generated/prisma/          # gerado pelo Prisma; não versionado
 ├── src/
 │   ├── controllers/
-│   │   ├── estudantes.controller.js
-│   │   ├── turmas.controller.js
-│   │   └── matriculas.controller.js
-│   │
-│   ├── data/
-│   │   └── db-memoria.js
-│   │
-│   ├── docs/
-│   │   └── openapi.yaml
-│   │
+│   ├── docs/openapi.yaml
+│   ├── errors/
+│   ├── lib/prisma.js          # cliente Prisma e conexão com PostgreSQL
 │   ├── middlewares/
-│   │   ├── erro.middleware.js
-│   │   └── validacao.middleware.js
-│   │
+│   ├── repositories/           # acesso aos dados via Prisma
 │   ├── routes/
-│   │   ├── estudantes.routes.js
-│   │   ├── turmas.routes.js
-│   │   └── matriculas.routes.js
-│   │
+│   ├── services/               # regras de negócio
+│   ├── utils/
 │   └── app.js
 │
-├── .gitignore
+├── prisma.config.ts
+├── .env                       # local; não versionado
 ├── package.json
 ├── package-lock.json
 └── README.md
@@ -70,7 +80,7 @@ trabalho1/
 Clone o repositório:
 
 ```bash
-git clone https://github.com/misaelmodesto/trabalho1-gcet908.git
+git clone https://github.com/misaelmodesto/trabalho1-gcet908.git trabalho1
 ```
 
 Entre na pasta do projeto:
@@ -85,13 +95,55 @@ Instale as dependências:
 npm install
 ```
 
-Crie um arquivo `.env` na raiz do projeto:
+Crie o arquivo `.env` na raiz e preencha `PORT`, `DATABASE_URL` e `DIRECT_URL` conforme a seção de configuração do banco.
 
-```env
-PORT=3000
+## Configuração do Prisma
+
+O schema está em [`prisma/schema.prisma`](./prisma/schema.prisma), a configuração da CLI está em [`prisma.config.ts`](./prisma.config.ts) e as migrations ficam em `prisma/migrations/`.
+
+Depois de instalar as dependências e configurar o `.env`, execute:
+
+```bash
+# Valida o schema
+npx prisma validate
+
+# Gera o Prisma Client em generated/prisma
+npx prisma generate
+
+# Aplica as migrations versionadas no banco configurado
+npx prisma migrate deploy
 ```
 
-## Executando o projeto
+O diretório `generated/prisma` é gerado automaticamente e está listado no `.gitignore`. Execute `npx prisma generate` novamente sempre que o `schema.prisma` for alterado.
+
+### Fluxo de desenvolvimento do schema
+
+Ao modificar o modelo de dados em `prisma/schema.prisma`, crie uma migration nomeada em um ambiente de desenvolvimento:
+
+```bash
+npx prisma migrate dev --name descricao_da_alteracao
+npx prisma generate
+```
+
+Para ambientes compartilhados ou de produção, aplique somente as migrations já versionadas:
+
+```bash
+npx prisma migrate deploy
+```
+
+> Confira sempre as variáveis de ambiente antes de executar comandos de migration. Não use `prisma migrate reset` ou comandos que aceitem perda de dados em um banco compartilhado.
+
+Comandos úteis:
+
+```bash
+# Verifica o estado das migrations
+npx prisma migrate status
+
+# Abre uma interface para consultar o banco
+npx prisma studio
+```
+
+## Executando a API
 
 Execute:
 
@@ -104,6 +156,8 @@ O servidor será iniciado, por padrão, em:
 ```text
 http://localhost:3000
 ```
+
+O processo da API pode estar rodando localmente, mas a persistência ocorre no PostgreSQL configurado em `DATABASE_URL`.
 
 A resposta da rota inicial será:
 
@@ -141,7 +195,6 @@ O arquivo da especificação OpenAPI também está disponível no repositório:
 | PUT | `/api/v1/estudantes/:id` | Substitui os dados de um estudante |
 | PATCH | `/api/v1/estudantes/:id` | Atualiza parcialmente um estudante |
 | DELETE | `/api/v1/estudantes/:id` | Remove um estudante |
-| GET | `/api/v1/estudantes/:id/matriculas` | Lista as matrículas do estudante |
 
 ### Turmas
 
@@ -167,36 +220,40 @@ O arquivo da especificação OpenAPI também está disponível no repositório:
 
 ## Filtros, busca e paginação
 
-A listagem de estudantes permite busca, filtros, ordenação e paginação.
+A listagem de estudantes permite busca, ordenação e paginação.
 
 Exemplo:
 
 ```http
-GET /api/v1/estudantes?curso=computação&ordenarPor=nome&ordem=asc&page=1&limit=10
+GET /api/v1/estudantes?nome=João&curso=computação&page=1&limit=10&ordenarPor=nome&ordem=asc
 ```
 
 Parâmetros disponíveis:
 
-```text
-nome
-curso
-page
-limit
-ordenarPor
-ordem
-```
+- `nome`
+- `curso`
+- `page`
+- `limit`
+- `ordenarPor`: `nome`, `email`, `curso` ou `matricula`
+- `ordem`: `asc` ou `desc`
 
-Também é possível filtrar matrículas:
-
-```http
-GET /api/v1/matriculas?status=ativa&turmaId=1
-```
-
-E turmas:
+A listagem de turmas aceita:
 
 ```http
 GET /api/v1/turmas?disciplina=web&semestre=2026.2
 ```
+
+## Modelo de dados
+
+O Prisma define três modelos, mapeados para as tabelas PostgreSQL abaixo:
+
+| Modelo | Tabela | Principais regras |
+|---|---|---|
+| `Estudante` | `estudantes` | `email` e `matricula` são únicos |
+| `Turma` | `turmas` | Possui `disciplina` e `semestre` |
+| `Matricula` | `matriculas` | Relaciona estudante e turma; possui chave única composta |
+
+As relações de `Matricula` usam chaves estrangeiras com exclusão em cascata. Ao excluir um estudante ou uma turma, suas matrículas relacionadas também são removidas pelo banco.
 
 ## Códigos de status utilizados
 
@@ -217,8 +274,8 @@ Os erros seguem um formato padronizado:
 ```json
 {
   "erro": {
-    "codigo": "MATRICULA_DUPLICADA",
-    "mensagem": "O estudante já possui matrícula nesta turma"
+    "codigo": "DADOS_INVALIDOS",
+    "mensagem": "Nome, email, curso e matrícula são obrigatórios"
   }
 }
 ```
@@ -236,7 +293,6 @@ Content-Type: application/json
 {
   "estudanteId": 1,
   "turmaId": 2,
-  "dataMatricula": "2026-09-02",
   "status": "ativa"
 }
 ```
@@ -252,18 +308,15 @@ Resposta:
   "id": 4,
   "estudanteId": 1,
   "turmaId": 2,
-  "dataMatricula": "2026-09-02",
   "status": "ativa"
 }
 ```
 
 ## Persistência dos dados
 
-Nesta etapa do projeto os dados são armazenados apenas em memória.
+A persistência é realizada no PostgreSQL configurado em `DATABASE_URL`. O cliente Prisma é criado em `src/lib/prisma.js` utilizando `@prisma/adapter-pg`.
 
-Isso significa que alterações realizadas durante a execução são perdidas quando o servidor é reiniciado.
-
-A integração com banco de dados será realizada em uma etapa posterior do projeto.
+As alterações de estrutura do banco devem ser registradas em `prisma/migrations/` e aplicadas com `npx prisma migrate deploy` nos ambientes compartilhados.
 
 ## Versionamento
 

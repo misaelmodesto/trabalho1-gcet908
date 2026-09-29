@@ -1,31 +1,26 @@
-const express = require('express');
+import express from 'express';
 
-const {
+import {
     validarTurma,
     validarTurmaParcial
-} = require('../middlewares/validacao.middleware');
+} from '../middlewares/validacao.middleware.js';
 
-const {
+import {
     listarTurmas,
     buscarTurmaPorId,
     criarTurma,
     substituirTurma,
     atualizarTurma,
     removerTurma
-} = require('../controllers/turmas.controller');
+} from '../controllers/turmas.controller.js';
 
 const router = express.Router();
 
 router.get('/', listarTurmas);
-
 router.get('/:id', buscarTurmaPorId);
-
 router.post('/', validarTurma, criarTurma);
-
 router.put('/:id', validarTurma, substituirTurma);
-
 router.patch('/:id', validarTurmaParcial, atualizarTurma);
-
 router.delete('/:id', removerTurma);
 
-module.exports = router;
+export default router;

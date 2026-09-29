@@ -17,4 +17,4 @@ function erroMiddleware(err, req, res, next) {
     });
 }
 
-module.exports = erroMiddleware;
+export default erroMiddleware;

@@ -1,33 +1,26 @@
-const express = require('express');
+import express from 'express';
 
-const {
+import {
     validarMatricula,
     validarMatriculaParcial
-} = require('../middlewares/validacao.middleware');
+} from '../middlewares/validacao.middleware.js';
 
-const {
+import {
     listarMatriculas,
     buscarMatriculaPorId,
     criarMatricula,
     substituirMatricula,
     atualizarMatricula,
     removerMatricula
-} = require('../controllers/matriculas.controller');
+} from '../controllers/matriculas.controller.js';
 
 const router = express.Router();
 
-
 router.get('/', listarMatriculas);
-
 router.get('/:id', buscarMatriculaPorId);
-
 router.post('/', validarMatricula, criarMatricula);
-
 router.put('/:id', validarMatricula, substituirMatricula);
-
 router.patch('/:id', validarMatriculaParcial, atualizarMatricula);
-
 router.delete('/:id', removerMatricula);
 
-
-module.exports = router;
+export default router;

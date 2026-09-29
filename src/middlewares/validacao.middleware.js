@@ -390,7 +390,7 @@ function validarMatriculaParcial(req, res, next) {
 }
 
 
-module.exports = {
+export {
     validarEstudante,
     validarEstudanteParcial,
     validarTurma,

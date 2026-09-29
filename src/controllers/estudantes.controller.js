@@ -1,356 +1,231 @@
-const { estudantes } = require('../data/db-memoria');
+import { prisma } from '../lib/prisma.js';
 
+// Função de teste utilizando o Prisma
+async function getUser(req, res) {
+    try {
+        const estudantes = await prisma.estudante.findMany();
+        return res.status(200).json({
+            origem: "Banco de dados Prisma",
+            dados: estudantes
+        });
+    } catch (error) {
+        return res.status(500).json({
+            erro: {
+                codigo: 'ERRO_BANCO_DADOS',
+                mensagem: error.message
+            }
+        });
+    }
+}
 
 // GET /estudantes
-function listarEstudantes(req, res) {
+export async function listarEstudantes(req, res) {
+    try {
+        const estudantes = await prisma.estudante.findMany();
+        
+        const {
+            nome,
+            curso,
+            page = 1,
+            limit = 10,
+            ordenarPor,
+            ordem = 'asc'
+        } = req.query;
 
-    const {
-        nome,
-        curso,
-        page = 1,
-        limit = 10,
-        ordenarPor,
-        ordem = 'asc'
-    } = req.query;
+        const pagina = parseInt(page);
+        const limite = parseInt(limit);
 
-    const pagina = parseInt(page);
-    const limite = parseInt(limit);
-
-
-    // Validação da paginação
-    if (
-        isNaN(pagina) ||
-        isNaN(limite) ||
-        pagina < 1 ||
-        limite < 1
-    ) {
-        return res.status(400).json({
-            erro: {
-                codigo: 'PAGINACAO_INVALIDA',
-                mensagem: 'Os parâmetros page e limit devem ser números maiores que zero'
-            }
-        });
-    }
-
-
-    // Cópia do array original
-    let resultado = [...estudantes];
-
-
-    // Busca por nome
-    if (nome) {
-        resultado = resultado.filter(
-            estudante =>
-                estudante.nome
-                    .toLowerCase()
-                    .includes(nome.toLowerCase())
-        );
-    }
-
-
-    // Filtro por curso
-    if (curso) {
-        resultado = resultado.filter(
-            estudante =>
-                estudante.curso
-                    .toLowerCase()
-                    .includes(curso.toLowerCase())
-        );
-    }
-
-
-    // Ordenação
-    if (ordenarPor) {
-
-        const camposPermitidos = [
-            'nome',
-            'email',
-            'curso',
-            'matricula'
-        ];
-
-        if (!camposPermitidos.includes(ordenarPor)) {
+        if (isNaN(pagina) || isNaN(limite) || pagina < 1 || limite < 1) {
             return res.status(400).json({
                 erro: {
-                    codigo: 'ORDENACAO_INVALIDA',
-                    mensagem: 'Campo de ordenação inválido'
+                    codigo: 'PAGINACAO_INVALIDA',
+                    mensagem: 'Os parâmetros page e limit devem ser números maiores que zero'
                 }
             });
         }
 
-        if (ordem !== 'asc' && ordem !== 'desc') {
-            return res.status(400).json({
-                erro: {
-                    codigo: 'ORDENACAO_INVALIDA',
-                    mensagem: 'A ordem deve ser asc ou desc'
-                }
+        let resultado = [...estudantes];
+
+        if (nome) {
+            resultado = resultado.filter(
+                estudante => estudante.nome.toLowerCase().includes(nome.toLowerCase())
+            );
+        }
+
+        if (curso) {
+            resultado = resultado.filter(
+                estudante => estudante.curso.toLowerCase().includes(curso.toLowerCase())
+            );
+        }
+
+        if (ordenarPor) {
+            const camposPermitidos = ['nome', 'email', 'curso', 'matricula'];
+            if (!camposPermitidos.includes(ordenarPor)) {
+                return res.status(400).json({
+                    erro: {
+                        codigo: 'ORDENACAO_INVALIDA',
+                        mensagem: 'Campo de ordenação inválido'
+                    }
+                });
+            }
+
+            if (ordem !== 'asc' && ordem !== 'desc') {
+                return res.status(400).json({
+                    erro: {
+                        codigo: 'ORDENACAO_INVALIDA',
+                        mensagem: 'A ordem deve ser asc ou desc'
+                    }
+                });
+            }
+
+            resultado.sort((a, b) => {
+                const valorA = a[ordenarPor].toString().toLowerCase();
+                const valorB = b[ordenarPor].toString().toLowerCase();
+
+                if (valorA < valorB) return ordem === 'asc' ? -1 : 1;
+                if (valorA > valorB) return ordem === 'asc' ? 1 : -1;
+                return 0;
             });
         }
 
-        resultado.sort((a, b) => {
+        const total = resultado.length;
+        const totalPaginas = Math.ceil(total / limite);
+        const inicio = (pagina - 1) * limite;
+        const fim = inicio + limite;
+        const dados = resultado.slice(inicio, fim);
 
-            const valorA = a[ordenarPor]
-                .toString()
-                .toLowerCase();
-
-            const valorB = b[ordenarPor]
-                .toString()
-                .toLowerCase();
-
-            if (valorA < valorB) {
-                return ordem === 'asc' ? -1 : 1;
-            }
-
-            if (valorA > valorB) {
-                return ordem === 'asc' ? 1 : -1;
-            }
-
-            return 0;
+        return res.status(200).json({
+            dados,
+            paginacao: { total, pagina, limite, totalPaginas }
         });
+    } catch (error) {
+        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
     }
-
-
-    // Total depois dos filtros
-    const total = resultado.length;
-
-    const totalPaginas = Math.ceil(total / limite);
-
-
-    // Paginação
-    const inicio = (pagina - 1) * limite;
-
-    const fim = inicio + limite;
-
-    const dados = resultado.slice(inicio, fim);
-
-
-    return res.status(200).json({
-        dados,
-        paginacao: {
-            total,
-            pagina,
-            limite,
-            totalPaginas
-        }
-    });
 }
-
 
 // GET /estudantes/:id
-function buscarEstudantePorId(req, res) {
+export async function buscarEstudantePorId(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+        const estudante = await prisma.estudante.findUnique({ where: { id } });
 
-    const id = parseInt(req.params.id);
+        if (!estudante) {
+            return res.status(404).json({
+                erro: {
+                    codigo: 'ESTUDANTE_NAO_ENCONTRADO',
+                    mensagem: `Estudante com id ${id} não encontrado`
+                }
+            });
+        }
 
-    const estudante = estudantes.find(
-        estudante => estudante.id === id
-    );
-
-    if (!estudante) {
-        return res.status(404).json({
-            erro: {
-                codigo: 'ESTUDANTE_NAO_ENCONTRADO',
-                mensagem: `Estudante com id ${id} não encontrado`
-            }
-        });
+        return res.status(200).json(estudante);
+    } catch (error) {
+        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
     }
-
-    return res.status(200).json(estudante);
 }
-
 
 // POST /estudantes
-function criarEstudante(req, res) {
+export async function criarEstudante(req, res) {
+    try {
+        const { nome, email, curso, matricula } = req.body;
 
-    const {
-        nome,
-        email,
-        curso,
-        matricula
-    } = req.body;
-
-    /*if (!nome || !email || !curso || !matricula) {
-        return res.status(400).json({
-            erro: {
-                codigo: 'DADOS_INVALIDOS',
-                mensagem: 'Nome, email, curso e matrícula são obrigatórios'
-            }
+        const estudanteDuplicado = await prisma.estudante.findFirst({
+            where: { OR: [{ email }, { matricula }] }
         });
-    }*/
 
-    const estudanteDuplicado = estudantes.find(
-        estudante =>
-            estudante.email === email ||
-            estudante.matricula === matricula
-    );
+        if (estudanteDuplicado) {
+            return res.status(409).json({
+                erro: {
+                    codigo: 'ESTUDANTE_DUPLICADO',
+                    mensagem: 'Já existe um estudante com este email ou matrícula'
+                }
+            });
+        }
 
-    if (estudanteDuplicado) {
-        return res.status(409).json({
-            erro: {
-                codigo: 'ESTUDANTE_DUPLICADO',
-                mensagem: 'Já existe um estudante com este email ou matrícula'
-            }
+        const novoEstudante = await prisma.estudante.create({
+            data: { nome, email, curso, matricula }
         });
+
+        return res.status(201).json(novoEstudante);
+    } catch (error) {
+        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
     }
-
-    const novoId =
-        estudantes.length > 0
-            ? Math.max(...estudantes.map(estudante => estudante.id)) + 1
-            : 1;
-
-    const novoEstudante = {
-        id: novoId,
-        nome,
-        email,
-        curso,
-        matricula
-    };
-
-    estudantes.push(novoEstudante);
-
-    return res.status(201).json(novoEstudante);
 }
-
 
 // PUT /estudantes/:id
-function substituirEstudante(req, res) {
+export async function substituirEstudante(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+        const { nome, email, curso, matricula } = req.body;
 
-    const id = parseInt(req.params.id);
+        const estudanteExiste = await prisma.estudante.findUnique({ where: { id } });
+        if (!estudanteExiste) {
+            return res.status(404).json({
+                erro: {
+                    codigo: 'ESTUDANTE_NAO_ENCONTRADO',
+                    mensagem: `Estudante com id ${id} não encontrado`
+                }
+            });
+        }
 
-    const index = estudantes.findIndex(
-        estudante => estudante.id === id
-    );
-
-    if (index === -1) {
-        return res.status(404).json({
-            erro: {
-                codigo: 'ESTUDANTE_NAO_ENCONTRADO',
-                mensagem: `Estudante com id ${id} não encontrado`
-            }
+        const estudanteAtualizado = await prisma.estudante.update({
+            where: { id },
+            data: { nome, email, curso, matricula }
         });
+
+        return res.status(200).json(estudanteAtualizado);
+    } catch (error) {
+        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
     }
-
-    const {
-        nome,
-        email,
-        curso,
-        matricula
-    } = req.body;
-
-    /*if (!nome || !email || !curso || !matricula) {
-        return res.status(400).json({
-            erro: {
-                codigo: 'DADOS_INVALIDOS',
-                mensagem: 'Nome, email, curso e matrícula são obrigatórios'
-            }
-        });
-    }*/
-
-    const estudanteDuplicado = estudantes.find(
-        estudante =>
-            estudante.id !== id &&
-            (
-                estudante.email === email ||
-                estudante.matricula === matricula
-            )
-    );
-
-    if (estudanteDuplicado) {
-        return res.status(409).json({
-            erro: {
-                codigo: 'ESTUDANTE_DUPLICADO',
-                mensagem: 'Já existe outro estudante com este email ou matrícula'
-            }
-        });
-    }
-
-    const estudanteAtualizado = {
-        id,
-        nome,
-        email,
-        curso,
-        matricula
-    };
-
-    estudantes[index] = estudanteAtualizado;
-
-    return res.status(200).json(estudanteAtualizado);
 }
-
 
 // PATCH /estudantes/:id
-function atualizarEstudante(req, res) {
+export async function atualizarEstudante(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+        const { nome, email, curso, matricula } = req.body;
 
-    const id = parseInt(req.params.id);
+        const estudanteExiste = await prisma.estudante.findUnique({ where: { id } });
+        if (!estudanteExiste) {
+            return res.status(404).json({
+                erro: {
+                    codigo: 'ESTUDANTE_NAO_ENCONTRADO',
+                    mensagem: `Estudante com id ${id} não encontrado`
+                }
+            });
+        }
 
-    const estudante = estudantes.find(
-        estudante => estudante.id === id
-    );
-
-    if (!estudante) {
-        return res.status(404).json({
-            erro: {
-                codigo: 'ESTUDANTE_NAO_ENCONTRADO',
-                mensagem: `Estudante com id ${id} não encontrado`
-            }
+        const estudanteAtualizado = await prisma.estudante.update({
+            where: { id },
+            data: { nome, email, curso, matricula }
         });
+
+        return res.status(200).json(estudanteAtualizado);
+    } catch (error) {
+        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
     }
-
-    const {
-        nome,
-        email,
-        curso,
-        matricula
-    } = req.body;
-
-    if (nome !== undefined) {
-        estudante.nome = nome;
-    }
-
-    if (email !== undefined) {
-        estudante.email = email;
-    }
-
-    if (curso !== undefined) {
-        estudante.curso = curso;
-    }
-
-    if (matricula !== undefined) {
-        estudante.matricula = matricula;
-    }
-
-    return res.status(200).json(estudante);
 }
-
 
 // DELETE /estudantes/:id
-function removerEstudante(req, res) {
+export async function removerEstudante(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+        const estudanteExiste = await prisma.estudante.findUnique({ where: { id } });
+        
+        if (!estudanteExiste) {
+            return res.status(404).json({
+                erro: {
+                    codigo: 'ESTUDANTE_NAO_ENCONTRADO',
+                    mensagem: `Estudante com id ${id} não encontrado`
+                }
+            });
+        }
 
-    const id = parseInt(req.params.id);
-
-    const index = estudantes.findIndex(
-        estudante => estudante.id === id
-    );
-
-    if (index === -1) {
-        return res.status(404).json({
-            erro: {
-                codigo: 'ESTUDANTE_NAO_ENCONTRADO',
-                mensagem: `Estudante com id ${id} não encontrado`
-            }
-        });
+        await prisma.estudante.delete({ where: { id } });
+        return res.status(204).send();
+    } catch (error) {
+        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
     }
-
-    estudantes.splice(index, 1);
-
-    return res.status(204).send();
 }
 
-
-module.exports = {
-    listarEstudantes,
-    buscarEstudantePorId,
-    criarEstudante,
-    substituirEstudante,
-    atualizarEstudante,
-    removerEstudante
-};
+export { getUser };

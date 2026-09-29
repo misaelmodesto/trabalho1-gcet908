@@ -1,29 +1,28 @@
-const express = require('express');
+import express from 'express';
 
-const {
+import {
     validarEstudante,
     validarEstudanteParcial
-} = require('../middlewares/validacao.middleware');
+} from '../middlewares/validacao.middleware.js';
 
-const {
+import {
+    getUser,
     listarEstudantes,
     buscarEstudantePorId,
     criarEstudante,
     substituirEstudante,
     atualizarEstudante,
     removerEstudante
-} = require('../controllers/estudantes.controller');
-
-const {
-    listarMatriculasPorEstudante
-} = require('../controllers/matriculas.controller');
+} from '../controllers/estudantes.controller';
 
 const router = express.Router();
 
 
 router.get('/', listarEstudantes);
 
-router.get('/:id/matriculas', listarMatriculasPorEstudante);
+router.get('/teste', getUser);
+
+/*router.get('/:id/matriculas', listarMatriculasPorEstudante);*/
 
 router.get('/:id', buscarEstudantePorId);
 
@@ -36,4 +35,4 @@ router.patch('/:id', validarEstudanteParcial, atualizarEstudante);
 router.delete('/:id', removerEstudante);
 
 
-module.exports = router;
+export default router

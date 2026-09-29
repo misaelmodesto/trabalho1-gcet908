@@ -1,311 +1,135 @@
-const { turmas } = require('../data/db-memoria');
-
+import { prisma } from '../lib/prisma.js';
 
 // GET /turmas
-function listarTurmas(req, res) {
+export async function listarTurmas(req, res) {
+    try {
+        const { disciplina, professor, semestre } = req.query;
+        let turmas = await prisma.turma.findMany();
 
-    const {
-        disciplina,
-        professor,
-        semestre
-    } = req.query;
+        if (disciplina) {
+            turmas = turmas.filter(t => t.disciplina.toLowerCase().includes(disciplina.toLowerCase()));
+        }
+        if (professor) {
+            turmas = turmas.filter(t => t.professor.toLowerCase().includes(professor.toLowerCase()));
+        }
+        if (semestre) {
+            turmas = turmas.filter(t => t.semestre === semestre);
+        }
 
-    let resultado = [...turmas];
-
-
-    if (disciplina) {
-        resultado = resultado.filter(
-            turma =>
-                turma.disciplina
-                    .toLowerCase()
-                    .includes(disciplina.toLowerCase())
-        );
+        return res.status(200).json(turmas);
+    } catch (error) {
+        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
     }
-
-
-    if (professor) {
-        resultado = resultado.filter(
-            turma =>
-                turma.professor
-                    .toLowerCase()
-                    .includes(professor.toLowerCase())
-        );
-    }
-
-
-    if (semestre) {
-        resultado = resultado.filter(
-            turma =>
-                turma.semestre === semestre
-        );
-    }
-
-
-    return res.status(200).json(resultado);
 }
 
 // GET /turmas/:id
-function buscarTurmaPorId(req, res) {
+export async function buscarTurmaPorId(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+        const turma = await prisma.turma.findUnique({ where: { id } });
 
-    const id = parseInt(req.params.id);
+        if (!turma) {
+            return res.status(404).json({
+                erro: {
+                    codigo: 'TURMA_NAO_ENCONTRADA',
+                    mensagem: `Turma com id ${id} não encontrada`
+                }
+            });
+        }
 
-    const turma = turmas.find(
-        turma => turma.id === id
-    );
-
-    if (!turma) {
-        return res.status(404).json({
-            erro: {
-                codigo: 'TURMA_NAO_ENCONTRADA',
-                mensagem: `Turma com id ${id} não encontrada`
-            }
-        });
+        return res.status(200).json(turma);
+    } catch (error) {
+        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
     }
-
-    return res.status(200).json(turma);
 }
-
 
 // POST /turmas
-function criarTurma(req, res) {
+export async function criarTurma(req, res) {
+    try {
+        const { disciplina, codigo, professor, semestre, vagas } = req.body;
 
-    const {
-        disciplina,
-        codigo,
-        professor,
-        semestre,
-        vagas
-    } = req.body;
-
-    if (!disciplina || !codigo || !professor || !semestre || vagas === undefined) {
-        return res.status(400).json({
-            erro: {
-                codigo: 'DADOS_INVALIDOS',
-                mensagem: 'Disciplina, código, professor, semestre e vagas são obrigatórios'
-            }
-        });
-    }
-
-    if (typeof vagas !== 'number' || vagas <= 0) {
-        return res.status(400).json({
-            erro: {
-                codigo: 'DADOS_INVALIDOS',
-                mensagem: 'O campo vagas deve ser um número maior que zero'
-            }
-        });
-    }
-
-    const turmaDuplicada = turmas.find(
-        turma => turma.codigo === codigo
-    );
-
-    if (turmaDuplicada) {
-        return res.status(409).json({
-            erro: {
-                codigo: 'TURMA_DUPLICADA',
-                mensagem: 'Já existe uma turma com este código'
-            }
-        });
-    }
-
-    const novoId =
-        turmas.length > 0
-            ? Math.max(...turmas.map(turma => turma.id)) + 1
-            : 1;
-
-    const novaTurma = {
-        id: novoId,
-        disciplina,
-        codigo,
-        professor,
-        semestre,
-        vagas
-    };
-
-    turmas.push(novaTurma);
-
-    return res.status(201).json(novaTurma);
-}
-
-
-// PUT /turmas/:id
-function substituirTurma(req, res) {
-
-    const id = parseInt(req.params.id);
-
-    const index = turmas.findIndex(
-        turma => turma.id === id
-    );
-
-    if (index === -1) {
-        return res.status(404).json({
-            erro: {
-                codigo: 'TURMA_NAO_ENCONTRADA',
-                mensagem: `Turma com id ${id} não encontrada`
-            }
-        });
-    }
-
-    const {
-        disciplina,
-        codigo,
-        professor,
-        semestre,
-        vagas
-    } = req.body;
-
-    if (!disciplina || !codigo || !professor || !semestre || vagas === undefined) {
-        return res.status(400).json({
-            erro: {
-                codigo: 'DADOS_INVALIDOS',
-                mensagem: 'Disciplina, código, professor, semestre e vagas são obrigatórios'
-            }
-        });
-    }
-
-    if (typeof vagas !== 'number' || vagas <= 0) {
-        return res.status(400).json({
-            erro: {
-                codigo: 'DADOS_INVALIDOS',
-                mensagem: 'O campo vagas deve ser um número maior que zero'
-            }
-        });
-    }
-
-    const turmaDuplicada = turmas.find(
-        turma =>
-            turma.id !== id &&
-            turma.codigo === codigo
-    );
-
-    if (turmaDuplicada) {
-        return res.status(409).json({
-            erro: {
-                codigo: 'TURMA_DUPLICADA',
-                mensagem: 'Já existe outra turma com este código'
-            }
-        });
-    }
-
-    const turmaAtualizada = {
-        id,
-        disciplina,
-        codigo,
-        professor,
-        semestre,
-        vagas
-    };
-
-    turmas[index] = turmaAtualizada;
-
-    return res.status(200).json(turmaAtualizada);
-}
-
-
-// PATCH /turmas/:id
-function atualizarTurma(req, res) {
-
-    const id = parseInt(req.params.id);
-
-    const turma = turmas.find(
-        turma => turma.id === id
-    );
-
-    if (!turma) {
-        return res.status(404).json({
-            erro: {
-                codigo: 'TURMA_NAO_ENCONTRADA',
-                mensagem: `Turma com id ${id} não encontrada`
-            }
-        });
-    }
-
-    const {
-        disciplina,
-        codigo,
-        professor,
-        semestre,
-        vagas
-    } = req.body;
-
-    if (vagas !== undefined) {
-        if (typeof vagas !== 'number' || vagas <= 0) {
+        if (!disciplina || !codigo || !professor || !semestre || vagas === undefined) {
             return res.status(400).json({
                 erro: {
                     codigo: 'DADOS_INVALIDOS',
-                    mensagem: 'O campo vagas deve ser um número maior que zero'
+                    mensagem: 'Disciplina, código, professor, semestre e vagas são obrigatórios'
                 }
             });
         }
 
-        turma.vagas = vagas;
+        const novaTurma = await prisma.turma.create({
+            data: { disciplina, codigo, professor, semestre, vagas }
+        });
+
+        return res.status(201).json(novaTurma);
+    } catch (error) {
+        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
     }
-
-    if (codigo !== undefined) {
-
-        const turmaDuplicada = turmas.find(
-            outraTurma =>
-                outraTurma.id !== id &&
-                outraTurma.codigo === codigo
-        );
-
-        if (turmaDuplicada) {
-            return res.status(409).json({
-                erro: {
-                    codigo: 'TURMA_DUPLICADA',
-                    mensagem: 'Já existe outra turma com este código'
-                }
-            });
-        }
-
-        turma.codigo = codigo;
-    }
-
-    if (disciplina !== undefined) {
-        turma.disciplina = disciplina;
-    }
-
-    if (professor !== undefined) {
-        turma.professor = professor;
-    }
-
-    if (semestre !== undefined) {
-        turma.semestre = semestre;
-    }
-
-    return res.status(200).json(turma);
 }
 
+// PUT /turmas/:id
+export async function substituirTurma(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+        const { disciplina, codigo, professor, semestre, vagas } = req.body;
+
+        const turmaExiste = await prisma.turma.findUnique({ where: { id } });
+        if (!turmaExiste) {
+            return res.status(404).json({
+                erro: { codigo: 'TURMA_NAO_ENCONTRADA', mensagem: `Turma com id ${id} não encontrada` }
+            });
+        }
+
+        const turmaAtualizada = await prisma.turma.update({
+            where: { id },
+            data: { disciplina, codigo, professor, semestre, vagas }
+        });
+
+        return res.status(200).json(turmaAtualizada);
+    } catch (error) {
+        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
+    }
+}
+
+// PATCH /turmas/:id
+export async function atualizarTurma(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+        const { disciplina, codigo, professor, semestre, vagas } = req.body;
+
+        const turmaExiste = await prisma.turma.findUnique({ where: { id } });
+        if (!turmaExiste) {
+            return res.status(404).json({
+                erro: { codigo: 'TURMA_NAO_ENCONTRADA', mensagem: `Turma com id ${id} não encontrada` }
+            });
+        }
+
+        const turmaAtualizada = await prisma.turma.update({
+            where: { id },
+            data: { disciplina, codigo, professor, semestre, vagas }
+        });
+
+        return res.status(200).json(turmaAtualizada);
+    } catch (error) {
+        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
+    }
+}
 
 // DELETE /turmas/:id
-function removerTurma(req, res) {
+export async function removerTurma(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+        const turmaExiste = await prisma.turma.findUnique({ where: { id } });
 
-    const id = parseInt(req.params.id);
+        if (!turmaExiste) {
+            return res.status(404).json({
+                erro: { codigo: 'TURMA_NAO_ENCONTRADA', mensagem: `Turma com id ${id} não encontrada` }
+            });
+        }
 
-    const index = turmas.findIndex(
-        turma => turma.id === id
-    );
-
-    if (index === -1) {
-        return res.status(404).json({
-            erro: {
-                codigo: 'TURMA_NAO_ENCONTRADA',
-                mensagem: `Turma com id ${id} não encontrada`
-            }
-        });
+        await prisma.turma.delete({ where: { id } });
+        return res.status(204).send();
+    } catch (error) {
+        return res.status(500).json({ erro: { codigo: 'ERRO_INTERNO', mensagem: error.message } });
     }
-
-    turmas.splice(index, 1);
-
-    return res.status(204).send();
 }
-
-
-module.exports = {
-    listarTurmas,
-    buscarTurmaPorId,
-    criarTurma,
-    substituirTurma,
-    atualizarTurma,
-    removerTurma
-};

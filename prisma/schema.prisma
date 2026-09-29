@@ -1,0 +1,55 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Tabela de Estudantes
+model Estudante {
+  id        Int         @id @default(autoincrement())
+  nome      String      @db.VarChar(150)
+  email     String      @unique @db.VarChar(150)
+  curso     String      @db.VarChar(100)
+  matricula String      @unique @db.VarChar(20)
+  
+  // Relacionamento: Um estudante pode ter várias matrículas
+  matriculas Matricula[]
+
+  @@map("estudantes")
+}
+
+// Tabela de Turmas
+model Turma {
+  id         Int         @id @default(autoincrement())
+  disciplina String      @db.VarChar(150)
+  semestre   String      @db.VarChar(20)
+
+  // Relacionamento: Uma turma pode ter várias matrículas
+  matriculas Matricula[]
+
+  @@map("turmas")
+}
+
+// Tabela de Matrículas (Tabela associativa N:N entre Estudantes e Turmas)
+model Matricula {
+  id           Int       @id @default(autoincrement())
+  estudanteId  Int       @map("estudante_id")
+  turmaId      Int       @map("turma_id")
+  status       String    @default("ativa") @db.VarChar(30)
+
+  // Relações e regras de chave estrangeira com onDelete Cascade
+  estudante    Estudante @relation(fields: [estudanteId], references: [id], onDelete: Cascade)
+  turma        Turma     @relation(fields: [turmaId], references: [id], onDelete: Cascade)
+
+  // Garante que o mesmo estudante não se matricule duas vezes na mesma turma (Unique composto)
+  @@unique([estudanteId, turmaId])
+  @@map("matriculas")
+}

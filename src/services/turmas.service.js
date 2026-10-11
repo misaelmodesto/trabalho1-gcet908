@@ -1,69 +1,56 @@
-import * as turmasRepository from '../repositories/turmas.repository.js';
 import { AppError } from '../errors/app-error.js';
+import {
+    criarTurma as criarEntidadeTurma,
+    selecionarDadosTurma
+} from '../models/turma.entity.js';
 import { normalizarId } from '../utils/normalizar-id.js';
 
-const camposTurma = ['disciplina', 'semestre'];
-
-function selecionarDadosTurma(dados = {}) {
-    return Object.fromEntries(
-        camposTurma
-            .filter((campo) => dados[campo] !== undefined)
-            .map((campo) => [campo, dados[campo]])
-    );
-}
-
-async function buscarTurmaExistente(valorId) {
-    const id = normalizarId(valorId);
-    const turma = await turmasRepository.buscarPorId(id);
-
-    if (!turma) {
-        throw new AppError(
-            `Turma com id ${id} não encontrada`,
-            404,
-            'TURMA_NAO_ENCONTRADA'
-        );
+export class TurmasService {
+    constructor({ turmasRepository }) {
+        this.turmasRepository = turmasRepository;
     }
 
-    return turma;
-}
+    async buscarTurmaExistente(valorId) {
+        const id = normalizarId(valorId);
+        const turma = await this.turmasRepository.buscarPorId(id);
 
-export function listarTurmas(filtros = {}) {
-    const { disciplina, semestre } = filtros;
-    const where = {};
+        if (!turma) {
+            throw new AppError(
+                `Turma com id ${id} não encontrada`,
+                404,
+                'TURMA_NAO_ENCONTRADA'
+            );
+        }
 
-    if (disciplina) {
-        where.disciplina = {
-            contains: disciplina,
-            mode: 'insensitive'
-        };
+        return turma;
     }
 
-    if (semestre) {
-        where.semestre = semestre;
+    listarTurmas(filtros = {}) {
+        const { disciplina, semestre } = filtros;
+
+        return this.turmasRepository.listar({ disciplina, semestre });
     }
 
-    return turmasRepository.listar({ where });
-}
+    buscarTurmaPorId(valorId) {
+        return this.buscarTurmaExistente(valorId);
+    }
 
-export function buscarTurmaPorId(valorId) {
-    return buscarTurmaExistente(valorId);
-}
+    criarTurma(dados) {
+        return this.turmasRepository.criar(criarEntidadeTurma(dados));
+    }
 
-export function criarTurma(dados) {
-    return turmasRepository.criar(selecionarDadosTurma(dados));
-}
+    async substituirTurma(valorId, dados) {
+        const turma = await this.buscarTurmaExistente(valorId);
+        return this.turmasRepository.atualizar(turma.id, selecionarDadosTurma(dados));
+    }
 
-export async function substituirTurma(valorId, dados) {
-    const turma = await buscarTurmaExistente(valorId);
-    return turmasRepository.atualizar(turma.id, selecionarDadosTurma(dados));
-}
+    async atualizarTurma(valorId, dados) {
+        const turma = await this.buscarTurmaExistente(valorId);
+        return this.turmasRepository.atualizar(turma.id, selecionarDadosTurma(dados));
+    }
 
-export async function atualizarTurma(valorId, dados) {
-    const turma = await buscarTurmaExistente(valorId);
-    return turmasRepository.atualizar(turma.id, selecionarDadosTurma(dados));
-}
-
-export async function removerTurma(valorId) {
-    const turma = await buscarTurmaExistente(valorId);
-    return turmasRepository.remover(turma.id);
+    async removerTurma(valorId) {
+        const turma = await this.buscarTurmaExistente(valorId);
+        return this.turmasRepository.remover(turma.id);
+    }
 }

@@ -1,27 +1,44 @@
-import { prisma } from '../lib/prisma.js';
+export class PrismaTurmasRepository {
+    constructor({ prisma }) {
+        this.prisma = prisma;
+    }
 
-export function listar({ where = {} } = {}) {
-    return prisma.turma.findMany({
-        where,
-        orderBy: { id: 'asc' }
-    });
-}
+    listar({ disciplina, semestre } = {}) {
+        const where = {};
 
-export function buscarPorId(id) {
-    return prisma.turma.findUnique({ where: { id } });
-}
+        if (disciplina) {
+            where.disciplina = {
+                contains: disciplina,
+                mode: 'insensitive'
+            };
+        }
 
-export function criar(data) {
-    return prisma.turma.create({ data });
-}
+        if (semestre) {
+            where.semestre = semestre;
+        }
 
-export function atualizar(id, data) {
-    return prisma.turma.update({
-        where: { id },
-        data
-    });
-}
+        return this.prisma.turma.findMany({
+            where,
+            orderBy: { id: 'asc' }
+        });
+    }
 
-export function remover(id) {
-    return prisma.turma.delete({ where: { id } });
+    buscarPorId(id) {
+        return this.prisma.turma.findUnique({ where: { id } });
+    }
+
+    criar(dados) {
+        return this.prisma.turma.create({ data: dados });
+    }
+
+    atualizar(id, dados) {
+        return this.prisma.turma.update({
+            where: { id },
+            data: dados
+        });
+    }
+
+    remover(id) {
+        return this.prisma.turma.delete({ where: { id } });
+    }
 }

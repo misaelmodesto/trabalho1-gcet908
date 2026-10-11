@@ -1,43 +1,47 @@
-import { prisma } from '../lib/prisma.js';
-
-export function listar() {
-    return prisma.matricula.findMany({
-        orderBy: { id: 'asc' }
-    });
-}
-
-export function buscarPorId(id) {
-    return prisma.matricula.findUnique({ where: { id } });
-}
-
-export function buscarPorEstudanteETurma(estudanteId, turmaId, ignorarId) {
-    const where = { estudanteId, turmaId };
-
-    if (ignorarId !== undefined) {
-        where.id = { not: ignorarId };
+export class PrismaMatriculasRepository {
+    constructor({ prisma }) {
+        this.prisma = prisma;
     }
 
-    return prisma.matricula.findFirst({ where });
-}
+    listar() {
+        return this.prisma.matricula.findMany({
+            orderBy: { id: 'asc' }
+        });
+    }
 
-export function listarPorEstudante(estudanteId) {
-    return prisma.matricula.findMany({
-        where: { estudanteId },
-        orderBy: { id: 'asc' }
-    });
-}
+    buscarPorId(id) {
+        return this.prisma.matricula.findUnique({ where: { id } });
+    }
 
-export function criar(data) {
-    return prisma.matricula.create({ data });
-}
+    buscarPorEstudanteETurma(estudanteId, turmaId, ignorarId) {
+        const where = { estudanteId, turmaId };
 
-export function atualizar(id, data) {
-    return prisma.matricula.update({
-        where: { id },
-        data
-    });
-}
+        if (ignorarId !== undefined) {
+            where.id = { not: ignorarId };
+        }
 
-export function remover(id) {
-    return prisma.matricula.delete({ where: { id } });
+        return this.prisma.matricula.findFirst({ where });
+    }
+
+    listarPorEstudante(estudanteId) {
+        return this.prisma.matricula.findMany({
+            where: { estudanteId },
+            orderBy: { id: 'asc' }
+        });
+    }
+
+    criar(dados) {
+        return this.prisma.matricula.create({ data: dados });
+    }
+
+    atualizar(id, dados) {
+        return this.prisma.matricula.update({
+            where: { id },
+            data: dados
+        });
+    }
+
+    remover(id) {
+        return this.prisma.matricula.delete({ where: { id } });
+    }
 }

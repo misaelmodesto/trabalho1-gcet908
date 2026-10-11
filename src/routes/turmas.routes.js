@@ -5,22 +5,19 @@ import {
     validarTurmaParcial
 } from '../middlewares/validacao.middleware.js';
 
-import {
-    listarTurmas,
-    buscarTurmaPorId,
-    criarTurma,
-    substituirTurma,
-    atualizarTurma,
-    removerTurma
-} from '../controllers/turmas.controller.js';
+export default function criarRotasTurmas({ controller }) {
+    const router = express.Router();
 
-const router = express.Router();
+    router.get('/', controller.listarTurmas.bind(controller));
+    router.get('/:id', controller.buscarTurmaPorId.bind(controller));
+    router.post('/', validarTurma, controller.criarTurma.bind(controller));
+    router.put('/:id', validarTurma, controller.substituirTurma.bind(controller));
+    router.patch(
+        '/:id',
+        validarTurmaParcial,
+        controller.atualizarTurma.bind(controller)
+    );
+    router.delete('/:id', controller.removerTurma.bind(controller));
 
-router.get('/', listarTurmas);
-router.get('/:id', buscarTurmaPorId);
-router.post('/', validarTurma, criarTurma);
-router.put('/:id', validarTurma, substituirTurma);
-router.patch('/:id', validarTurmaParcial, atualizarTurma);
-router.delete('/:id', removerTurma);
-
-export default router;
+    return router;
+}

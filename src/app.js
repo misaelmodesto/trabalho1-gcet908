@@ -1,52 +1,37 @@
 import express from 'express';
-import dotenv from 'dotenv';
+import { fileURLToPath } from 'node:url';
 import swaggerUi from 'swagger-ui-express';
 import YAML from 'yamljs';
 
 import erroMiddleware from './middlewares/erro.middleware.js';
-import estudantesRoutes from './routes/estudantes.routes.js';
-import turmasRoutes from './routes/turmas.routes.js';
-import matriculasRoutes from './routes/matriculas.routes.js';
+import rotaNaoEncontradaMiddleware from './middlewares/rota-nao-encontrada.middleware.js';
 
-const swaggerDocument = YAML.load('./src/docs/openapi.yaml');
-
-dotenv.config();
-
-const app = express();
-const port = process.env.PORT || 3000;
-
-app.use(express.json());
-
-// Swagger
-app.use(
-    '/docs',
-    swaggerUi.serve,
-    swaggerUi.setup(swaggerDocument)
+const swaggerDocument = YAML.load(
+    fileURLToPath(new URL('./docs/openapi.yaml', import.meta.url))
 );
 
-app.get('/', (req, res) => {
-    res.status(200).json({
-        mensagem: 'API de Gestão de Turmas Acadêmicas'
-    });
-});
+export function criarApp({ routes, swagger = swaggerDocument } = {}) {
+    if (!routes?.status || !routes?.estudantes || !routes?.turmas || !routes?.matriculas) {
+        throw new Error('As rotas da aplicação devem ser fornecidas pelo composition root');
+    }
 
-app.use('/api/v1/estudantes', estudantesRoutes);
-app.use('/api/v1/turmas', turmasRoutes);
-app.use('/api/v1/matriculas', matriculasRoutes);
+    const app = express();
 
-// Middleware para rotas inexistentes 404
-app.use((req, res) => {
-    return res.status(404).json({
-        erro: {
-            codigo: 'ROTA_NAO_ENCONTRADA',
-            mensagem: 'A rota solicitada não existe'
-        }
-    });
-});
+    app.use(express.json());
 
-// Middleware centralizado de erros
-app.use(erroMiddleware);
+    app.use(
+        '/docs',
+        swaggerUi.serve,
+        swaggerUi.setup(swagger)
+    );
 
-app.listen(port, () => {
-    console.log(`Servidor executando na porta ${port}`);
-});
+    app.use('/', routes.status);
+    app.use('/api/v1/estudantes', routes.estudantes);
+    app.use('/api/v1/turmas', routes.turmas);
+    app.use('/api/v1/matriculas', routes.matriculas);
+
+    app.use(rotaNaoEncontradaMiddleware);
+    app.use(erroMiddleware);
+
+    return app;
+}

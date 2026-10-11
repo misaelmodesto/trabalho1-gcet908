@@ -5,25 +5,23 @@ import {
     validarMatriculaParcial
 } from '../middlewares/validacao.middleware.js';
 
-import {
-    listarMatriculas,
-    buscarMatriculaPorId,
-    criarMatricula,
-    substituirMatricula,
-    atualizarMatricula,
-    removerMatricula,
-    listarMatriculasPorEstudante
-} from '../controllers/matriculas.controller.js';
+export default function criarRotasMatriculas({ controller }) {
+    const router = express.Router();
 
-const router = express.Router();
+    router.get('/', controller.listarMatriculas.bind(controller));
+    router.get(
+        '/:id/matriculas',
+        controller.listarMatriculasPorEstudante.bind(controller)
+    );
+    router.get('/:id', controller.buscarMatriculaPorId.bind(controller));
+    router.post('/', validarMatricula, controller.criarMatricula.bind(controller));
+    router.put('/:id', validarMatricula, controller.substituirMatricula.bind(controller));
+    router.patch(
+        '/:id',
+        validarMatriculaParcial,
+        controller.atualizarMatricula.bind(controller)
+    );
+    router.delete('/:id', controller.removerMatricula.bind(controller));
 
-router.get('/', listarMatriculas);
-router.get('/:id', buscarMatriculaPorId);
-router.post('/', validarMatricula, criarMatricula);
-router.put('/:id', validarMatricula, substituirMatricula);
-router.patch('/:id', validarMatriculaParcial, atualizarMatricula);
-router.delete('/:id', removerMatricula);
-
-router.get('/:id/matriculas', listarMatriculasPorEstudante);
-
-export default router;
+    return router;
+}

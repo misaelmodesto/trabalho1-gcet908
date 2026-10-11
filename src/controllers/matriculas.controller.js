@@ -1,75 +1,79 @@
-import * as matriculasService from '../services/matriculas.service.js';
-
-export async function listarMatriculas(req, res, next) {
-    try {
-        const matriculas = await matriculasService.listarMatriculas();
-        return res.status(200).json(matriculas);
-    } catch (error) {
-        return next(error);
+export class MatriculasController {
+    constructor({ service }) {
+        this.service = service;
     }
-}
 
-export async function buscarMatriculaPorId(req, res, next) {
-    try {
-        const matricula = await matriculasService.buscarMatriculaPorId(req.params.id);
-        return res.status(200).json(matricula);
-    } catch (error) {
-        return next(error);
+    async listarMatriculas(req, res, next) {
+        try {
+            const matriculas = await this.service.listarMatriculas();
+            return res.status(200).json(matriculas);
+        } catch (error) {
+            return next(error);
+        }
     }
-}
 
-export async function criarMatricula(req, res, next) {
-    try {
-        const matricula = await matriculasService.criarMatricula(req.body);
-        return res.status(201).json(matricula);
-    } catch (error) {
-        return next(error);
+    async buscarMatriculaPorId(req, res, next) {
+        try {
+            const matricula = await this.service.buscarMatriculaPorId(req.params.id);
+            return res.status(200).json(matricula);
+        } catch (error) {
+            return next(error);
+        }
     }
-}
 
-export async function substituirMatricula(req, res, next) {
-    try {
-        const matricula = await matriculasService.substituirMatricula(
-            req.params.id,
-            req.body
-        );
-
-        return res.status(200).json(matricula);
-    } catch (error) {
-        return next(error);
+    async criarMatricula(req, res, next) {
+        try {
+            const matricula = await this.service.criarMatricula(req.body);
+            return res.status(201).json(matricula);
+        } catch (error) {
+            return next(error);
+        }
     }
-}
 
-export async function atualizarMatricula(req, res, next) {
-    try {
-        const matricula = await matriculasService.atualizarMatricula(
-            req.params.id,
-            req.body
-        );
+    async substituirMatricula(req, res, next) {
+        try {
+            const matricula = await this.service.substituirMatricula(
+                req.params.id,
+                req.body
+            );
 
-        return res.status(200).json(matricula);
-    } catch (error) {
-        return next(error);
+            return res.status(200).json(matricula);
+        } catch (error) {
+            return next(error);
+        }
     }
-}
 
-export async function removerMatricula(req, res, next) {
-    try {
-        await matriculasService.removerMatricula(req.params.id);
-        return res.status(204).send();
-    } catch (error) {
-        return next(error);
+    async atualizarMatricula(req, res, next) {
+        try {
+            const matricula = await this.service.atualizarMatricula(
+                req.params.id,
+                req.body
+            );
+
+            return res.status(200).json(matricula);
+        } catch (error) {
+            return next(error);
+        }
     }
-}
 
-export async function listarMatriculasPorEstudante(req, res, next) {
-    try {
-        const matriculas = await matriculasService.listarMatriculasPorEstudante(
-            req.params.id
-        );
+    async removerMatricula(req, res, next) {
+        try {
+            await this.service.removerMatricula(req.params.id);
+            return res.status(204).send();
+        } catch (error) {
+            return next(error);
+        }
+    }
 
-        return res.status(200).json(matriculas);
-    } catch (error) {
-        return next(error);
+    async listarMatriculasPorEstudante(req, res, next) {
+        try {
+            const matriculas = await this.service.listarMatriculasPorEstudante(
+                req.params.id
+            );
+
+            return res.status(200).json(matriculas);
+        } catch (error) {
+            return next(error);
+        }
     }
 }

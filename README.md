@@ -57,16 +57,20 @@ trabalho1/
 │   └── schema.prisma
 ├── generated/prisma/          # gerado pelo Prisma; não versionado
 ├── src/
+│   ├── config/container.js        # composição e injeção de dependências
 │   ├── controllers/
 │   ├── docs/openapi.yaml
 │   ├── errors/
 │   ├── lib/prisma.js          # cliente Prisma e conexão com PostgreSQL
 │   ├── middlewares/
+│   ├── models/                 # entidades e dados do domínio
 │   ├── repositories/           # acesso aos dados via Prisma
 │   ├── routes/
 │   ├── services/               # regras de negócio
 │   ├── utils/
-│   └── app.js
+│   ├── app.js                  # fábrica da aplicação Express
+│   └── server.js               # inicialização do servidor
+├── tests/                      # testes unitários sem dependência do banco
 │
 ├── prisma.config.ts
 ├── .env                       # local; não versionado
@@ -74,6 +78,19 @@ trabalho1/
 ├── package-lock.json
 └── README.md
 ```
+
+## Arquitetura
+
+A aplicação segue o fluxo `routes → controllers → services → repositories → Prisma`.
+
+- `routes` define endpoints e middlewares HTTP.
+- `controllers` traduz HTTP para chamadas de aplicação.
+- `services` concentram os casos de uso e regras de negócio.
+- `repositories` isolam o acesso ao PostgreSQL por meio do Prisma.
+- `models` representam e selecionam os dados do domínio.
+- `config/container.js` monta as dependências para reduzir acoplamento e facilitar testes.
+
+O detalhamento da organização está em [`ARQUITETURA.md`](./ARQUITETURA.md), e as decisões principais estão em [`docs/adr/`](./docs/adr/).
 
 ## Instalação
 
@@ -158,6 +175,14 @@ http://localhost:3000
 ```
 
 O processo da API pode estar rodando localmente, mas a persistência ocorre no PostgreSQL configurado em `DATABASE_URL`.
+
+## Testes
+
+Os testes unitários usam repositórios falsos injetados nos serviços e não precisam de conexão com o banco:
+
+```bash
+npm test
+```
 
 A resposta da rota inicial será:
 

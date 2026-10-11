@@ -1,8 +1,13 @@
-import { prisma } from './src/lib/prisma';
+import 'dotenv/config';
+
+import { criarContainer } from './src/config/container.js';
 
 async function getUser() {
-    const esdudantes = await prisma.estudante.findMany();
-    console.log(esdudantes)
+    const container = criarContainer();
+    const estudantes = await container.repositories.estudantes.listarTodos();
+
+    console.log(estudantes);
+    await container.prisma.$disconnect();
 }
 
 getUser();

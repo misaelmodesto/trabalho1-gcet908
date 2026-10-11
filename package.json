@@ -5,7 +5,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "tsx src/app.js"
+    "start": "tsx src/server.js",
+    "test": "tsx --test"
   },
   "keywords": [],
   "author": "",

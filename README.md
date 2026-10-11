@@ -73,6 +73,7 @@ trabalho1/
 ├── tests/                      # testes unitários sem dependência do banco
 │
 ├── prisma.config.ts
+├── eslint.config.js            # configuração do ESLint
 ├── .env                       # local; não versionado
 ├── package.json
 ├── package-lock.json
@@ -89,6 +90,16 @@ A aplicação segue o fluxo `routes → controllers → services → repositorie
 - `repositories` isolam o acesso ao PostgreSQL por meio do Prisma.
 - `models` representam e selecionam os dados do domínio.
 - `config/container.js` monta as dependências para reduzir acoplamento e facilitar testes.
+
+### Padrões utilizados
+
+| Padrão | Aplicação | Problema resolvido | Sem o padrão |
+|---|---|---|---|
+| Repository | Repositórios Prisma traduzem operações do domínio para o ORM | Evita espalhar consultas Prisma pelas demais camadas | Serviços e controladores ficariam acoplados ao ORM |
+| Injeção de Dependência | Serviços recebem repositórios e controladores recebem serviços | Permite testes com dependências falsas e reduz acoplamento | Os casos de uso precisariam criar ou importar dependências concretas |
+| Factory | `criarContainer`, `criarApp` e `criarRotas*` centralizam a criação da aplicação | Evita repetir a montagem do grafo de dependências | A composição ficaria espalhada pelos pontos de entrada |
+
+O detalhamento dessas decisões, incluindo o que ocorreria sem cada padrão, está em [`ARQUITETURA.md`](./ARQUITETURA.md).
 
 O detalhamento da organização está em [`ARQUITETURA.md`](./ARQUITETURA.md), e as decisões principais estão em [`docs/adr/`](./docs/adr/).
 
@@ -182,6 +193,12 @@ Os testes unitários usam repositórios falsos injetados nos serviços e não pr
 
 ```bash
 npm test
+```
+
+Verifique também o padrão de qualidade do código com:
+
+```bash
+npm run lint
 ```
 
 A resposta da rota inicial será:

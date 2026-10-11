@@ -6,7 +6,8 @@
   "main": "index.js",
   "scripts": {
     "start": "tsx src/server.js",
-    "test": "tsx --test"
+    "test": "tsx --test",
+    "lint": "eslint ."
   },
   "keywords": [],
   "author": "",
@@ -21,8 +22,11 @@
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
+    "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.3",
     "@types/pg": "^8.23.1",
+    "eslint": "^10.12.0",
+    "globals": "^17.13.0",
     "prisma": "^7.10.0",
     "tsx": "^4.23.15"
   }

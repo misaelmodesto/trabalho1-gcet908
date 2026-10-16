@@ -20,6 +20,7 @@ As rotas disponíveis estão descritas na seção de endpoints.
 
 - Node.js com módulos ES (`type: module`)
 - Express 5
+- Socket.IO para comunicação em tempo real
 - PostgreSQL remoto
 - Prisma ORM 7 e Prisma Client
 - `@prisma/adapter-pg` e `pg` para a conexão com PostgreSQL
@@ -64,12 +65,13 @@ trabalho1/
 │   ├── lib/prisma.js          # cliente Prisma e conexão com PostgreSQL
 │   ├── middlewares/
 │   ├── models/                 # entidades e dados do domínio
+│   ├── notifications/           # barramento e handlers do WebSocket
 │   ├── repositories/           # acesso aos dados via Prisma
 │   ├── routes/
 │   ├── services/               # regras de negócio
 │   ├── utils/
 │   ├── app.js                  # fábrica da aplicação Express
-│   └── server.js               # inicialização do servidor
+│   └── server.js               # inicialização REST + WebSocket
 ├── tests/                      # testes unitários sem dependência do banco
 │
 ├── prisma.config.ts
@@ -123,7 +125,7 @@ Instale as dependências:
 npm install
 ```
 
-Crie o arquivo `.env` na raiz e preencha `PORT`, `DATABASE_URL` e `DIRECT_URL` conforme a seção de configuração do banco.
+Crie o arquivo `.env` na raiz e preencha `PORT`, `DATABASE_URL` e `DIRECT_URL` conforme a seção de configuração do banco. A variável `ORIGEM_PERMITIDA` é opcional e controla a origem autorizada pelo Socket.IO.
 
 ## Configuração do Prisma
 
@@ -179,13 +181,65 @@ Execute:
 npm start
 ```
 
-O servidor será iniciado, por padrão, em:
+O servidor REST e o WebSocket serão iniciados, por padrão, na mesma porta:
 
 ```text
 http://localhost:3000
 ```
 
-O processo da API pode estar rodando localmente, mas a persistência ocorre no PostgreSQL configurado em `DATABASE_URL`.
+O processo da API pode estar rodando localmente, mas a persistência ocorre no PostgreSQL configurado em `DATABASE_URL`. O cliente Socket.IO deve conectar-se ao mesmo endereço HTTP.
+
+## Comunicação em tempo real
+
+A comunicação em tempo real usa Socket.IO sobre o mesmo servidor HTTP da API. Os clientes podem acompanhar uma turma e entram na sala `turma:<id>`.
+
+Exemplo de cliente:
+
+```javascript
+import { io } from 'socket.io-client';
+
+const socket = io('http://localhost:3000');
+
+socket.emit('acompanhar-turma', { turmaId: 1 }, (resposta) => {
+    console.log('Acompanhamento:', resposta);
+});
+
+socket.on('participante-entrou', (dados) => {
+    console.log('Novo participante:', dados);
+});
+
+socket.on('matricula-criada', (dados) => {
+    console.log('Nova matrícula na turma:', dados);
+});
+
+socket.on('matricula-atualizada', (dados) => {
+    console.log('Matrícula atualizada:', dados);
+});
+
+socket.on('matricula-removida', (dados) => {
+    console.log('Matrícula removida:', dados);
+});
+```
+
+Eventos enviados pelo cliente:
+
+| Evento | Payload | Finalidade |
+|---|---|---|
+| `acompanhar-turma` | `{ turmaId }` | Entra na sala da turma |
+| `sair-da-turma` | `{ turmaId }` | Sai da sala da turma |
+
+Eventos emitidos pelo servidor:
+
+| Evento | Destino | Finalidade |
+|---|---|---|
+| `acompanhamento-iniciado` | Cliente solicitante | Confirma a entrada na sala |
+| `participante-entrou` | Demais clientes da sala | Informa uma nova entrada |
+| `participante-saiu` | Demais clientes da sala | Informa uma saída ou desconexão |
+| `matricula-criada` | Clientes da turma | Informa uma nova matrícula |
+| `matricula-atualizada` | Clientes da turma | Informa uma alteração |
+| `matricula-removida` | Clientes da turma | Informa uma remoção |
+
+As operações REST de criação, atualização e remoção de matrículas publicam eventos no barramento da aplicação. Os handlers do Socket.IO encaminham cada evento somente para a sala da turma relacionada.
 
 ## Testes
 

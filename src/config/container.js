@@ -13,8 +13,12 @@ import criarRotasTurmas from '../routes/turmas.routes.js';
 import { EstudantesService } from '../services/estudantes.service.js';
 import { MatriculasService } from '../services/matriculas.service.js';
 import { TurmasService } from '../services/turmas.service.js';
+import { criarBarramentoEventos } from '../notifications/event-bus.js';
 
-export function criarContainer({ prismaClient = prisma } = {}) {
+export function criarContainer({
+    prismaClient = prisma,
+    eventBus = criarBarramentoEventos()
+} = {}) {
     const repositories = {
         estudantes: new PrismaEstudantesRepository({ prisma: prismaClient }),
         turmas: new PrismaTurmasRepository({ prisma: prismaClient }),
@@ -31,7 +35,8 @@ export function criarContainer({ prismaClient = prisma } = {}) {
         matriculas: new MatriculasService({
             matriculasRepository: repositories.matriculas,
             estudantesRepository: repositories.estudantes,
-            turmasRepository: repositories.turmas
+            turmasRepository: repositories.turmas,
+            eventBus
         })
     };
 
@@ -51,6 +56,7 @@ export function criarContainer({ prismaClient = prisma } = {}) {
 
     return {
         prisma: prismaClient,
+        eventBus,
         repositories,
         services,
         controllers,

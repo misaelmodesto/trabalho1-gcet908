@@ -3,13 +3,29 @@ import {
     criarMatricula as criarEntidadeMatricula,
     selecionarDadosMatricula
 } from '../models/matricula.entity.js';
+import { EVENTOS_NOTIFICACAO } from '../notifications/eventos.js';
 import { normalizarId } from '../utils/normalizar-id.js';
 
+const barramentoVazio = { emit() {} };
+
 export class MatriculasService {
-    constructor({ matriculasRepository, estudantesRepository, turmasRepository }) {
+    constructor({
+        matriculasRepository,
+        estudantesRepository,
+        turmasRepository,
+        eventBus = barramentoVazio
+    }) {
         this.matriculasRepository = matriculasRepository;
         this.estudantesRepository = estudantesRepository;
         this.turmasRepository = turmasRepository;
+        this.eventBus = eventBus;
+    }
+
+    publicarEvento(evento, matricula) {
+        this.eventBus.emit(evento, {
+            turmaId: matricula.turmaId,
+            matricula
+        });
     }
 
     async buscarMatriculaExistente(valorId) {
@@ -87,7 +103,10 @@ export class MatriculasService {
         await this.validarRelacionamentos(dadosMatricula);
         await this.validarDuplicidade(dadosMatricula);
 
-        return this.matriculasRepository.criar(dadosMatricula);
+        const matricula = await this.matriculasRepository.criar(dadosMatricula);
+        this.publicarEvento(EVENTOS_NOTIFICACAO.MATRICULA_CRIADA, matricula);
+
+        return matricula;
     }
 
     async substituirMatricula(valorId, dados) {
@@ -97,7 +116,17 @@ export class MatriculasService {
         await this.validarRelacionamentos(dadosMatricula);
         await this.validarDuplicidade(dadosMatricula, matricula.id);
 
-        return this.matriculasRepository.atualizar(matricula.id, dadosMatricula);
+        const matriculaAtualizada = await this.matriculasRepository.atualizar(
+            matricula.id,
+            dadosMatricula
+        );
+
+        this.publicarEvento(
+            EVENTOS_NOTIFICACAO.MATRICULA_ATUALIZADA,
+            matriculaAtualizada
+        );
+
+        return matriculaAtualizada;
     }
 
     async atualizarMatricula(valorId, dados) {
@@ -107,12 +136,28 @@ export class MatriculasService {
         await this.validarRelacionamentos(dadosMatricula);
         await this.validarDuplicidade(dadosMatricula, matricula.id);
 
-        return this.matriculasRepository.atualizar(matricula.id, dadosMatricula);
+        const matriculaAtualizada = await this.matriculasRepository.atualizar(
+            matricula.id,
+            dadosMatricula
+        );
+
+        this.publicarEvento(
+            EVENTOS_NOTIFICACAO.MATRICULA_ATUALIZADA,
+            matriculaAtualizada
+        );
+
+        return matriculaAtualizada;
     }
 
     async removerMatricula(valorId) {
         const matricula = await this.buscarMatriculaExistente(valorId);
-        return this.matriculasRepository.remover(matricula.id);
+        const matriculaRemovida = await this.matriculasRepository.remover(matricula.id);
+        this.publicarEvento(
+            EVENTOS_NOTIFICACAO.MATRICULA_REMOVIDA,
+            matriculaRemovida
+        );
+
+        return matriculaRemovida;
     }
 
     async listarMatriculasPorEstudante(valorId) {

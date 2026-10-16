@@ -48,6 +48,7 @@ src/
 ├── services/                      # casos de uso e regras de negócio
 ├── middlewares/                   # validação, erros e rota não encontrada
 ├── errors/                        # erros de aplicação
+├── notifications/                 # barramento e handlers do WebSocket
 ├── lib/prisma.js                  # cliente e adapter do Prisma
 └── utils/                         # funções compartilhadas
 ```
@@ -76,7 +77,25 @@ Selecionam e representam os dados permitidos para cada recurso antes da persist�
 
 ### App e server
 
-`app.js` apenas cria a aplicação e recebe suas rotas. `server.js` compõe o container e abre a porta HTTP. Essa separação permite testar a aplicação sem iniciar um servidor real.
+`app.js` apenas cria a aplicação e recebe suas rotas. `server.js` compõe o container, cria o servidor HTTP, conecta o Socket.IO e abre uma única porta para REST e WebSocket. Essa separação permite testar a aplicação sem iniciar um servidor real.
+
+### Comunicação em tempo real
+
+Os clientes acompanham uma turma por meio do evento `acompanhar-turma`. O handler coloca o socket na sala `turma:<id>`, permitindo que as notificações sejam direcionadas somente aos clientes interessados naquela turma.
+
+As alterações de matrículas não chamam o Socket.IO diretamente. O `MatriculasService` publica eventos no barramento (`matricula-criada`, `matricula-atualizada` e `matricula-removida`) depois que o repositório confirma a operação. Os handlers inscritos no barramento traduzem esses eventos para emissões Socket.IO na sala correspondente.
+
+Esse fluxo mantém o serviço independente da biblioteca de transporte:
+
+```text
+REST request
+  ↓
+controller → service → repository → Prisma
+                 ↓
+            event bus
+                 ↓
+      Socket.IO → sala turma:<id> → clientes
+```
 
 ## Padrões aplicados
 
@@ -111,6 +130,14 @@ MVC é o estilo arquitetural utilizado para separar a entrada HTTP dos casos de 
 ### Composition Root
 
 O container funciona como ponto único de composição da aplicação. Essa técnica mantém as decisões de infraestrutura fora dos casos de uso e torna explícito o grafo de dependências de produção.
+
+### Event Bus / Observer
+
+Problema resolvido: comunicar alterações da API aos clientes em tempo real sem acoplar os serviços ao Socket.IO.
+
+Aplicação: o barramento recebe eventos publicados pelo `MatriculasService`, e `notifications/handlers.js` observa esses eventos e os envia para a sala da turma relacionada.
+
+Sem esse padrão, o serviço precisaria conhecer a instância do Socket.IO, dificultando testes e a substituição do transporte de comunicação.
 
 ## Plano de evolução
 

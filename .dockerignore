@@ -1,0 +1,11 @@
+node_modules
+generated
+npm-debug.log*
+.git
+.env
+tests
+.claude
+.agents
+.windsurf
+skills-lock.json
+coverage
